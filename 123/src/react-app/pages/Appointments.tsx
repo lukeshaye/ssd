@@ -209,8 +209,8 @@ export default function Appointments() {
      }
      const appointmentData = {
        ...data,
-       appointment_date: newStart.toISOString(),
-       end_date: newEnd.toISOString(),
+       appointment_date: newStart.format("YYYY-MM-DD HH:mm:ss"),
+       end_date: newEnd.format("YYYY-MM-DD HH:mm:ss"),
        price: Math.round(Number(data.price) * 100),
        client_id: Number(data.client_id),
        professional_id: professionalId,
