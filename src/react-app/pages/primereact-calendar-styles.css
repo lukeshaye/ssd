@@ -99,3 +99,7 @@
 .p-dropdown.p-focus {
     box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #ec4899, 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
 }
+/* Adiciona um espaçamento responsivo entre o mês e o ano no cabeçalho */
+.p-datepicker-title .p-datepicker-year {
+    margin-left: 0.5rem !important; /* 8px de espaçamento */
+}
