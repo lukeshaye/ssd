@@ -1,9 +1,11 @@
+// src/shared/store.ts
+
 import { create } from 'zustand';
 import { supabase } from '../react-app/supabaseClient';
 import type {
   ClientType,
   ProductType,
-  ServiceType, // <-- Importado o novo tipo de Serviço
+  ServiceType,
   AppointmentType,
   FinancialEntryType,
   ProfessionalType,
@@ -15,7 +17,8 @@ interface AppState {
   // Clientes
   clients: ClientType[];
   fetchClients: (userId: string) => Promise<void>;
-  addClient: (client: Omit<ClientType, 'id' | 'user_id'>, userId: string) => Promise<void>;
+  // MODIFICADO: A função agora retorna o cliente criado
+  addClient: (client: Omit<ClientType, 'id' | 'user_id'>, userId: string) => Promise<ClientType>;
   updateClient: (client: ClientType) => Promise<void>;
   deleteClient: (clientId: number) => Promise<void>;
 
@@ -26,7 +29,7 @@ interface AppState {
   updateProduct: (product: ProductType) => Promise<void>;
   deleteProduct: (productId: number) => Promise<void>;
 
-  // --- NOVO: Serviços ---
+  // Serviços
   services: ServiceType[];
   fetchServices: (userId: string) => Promise<void>;
   addService: (service: Omit<ServiceType, 'id' | 'user_id'>, userId: string) => Promise<void>;
@@ -62,7 +65,7 @@ interface AppState {
   loading: {
     clients: boolean;
     products: boolean;
-    services: boolean; // <-- Adicionado
+    services: boolean;
     professionals: boolean;
     appointments: boolean;
     financialEntries: boolean;
@@ -80,10 +83,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (error) console.error("Erro ao buscar clientes:", error);
     set({ clients: data || [], loading: { ...get().loading, clients: false } });
   },
+  // CORRIGIDO: A função agora retorna o novo cliente e trata o caso de erro.
   addClient: async (client, userId) => {
-    const { data, error } = await supabase.from('clients').insert([{ ...client, user_id: userId }]).select();
+    const { data, error } = await supabase
+      .from('clients')
+      .insert([{ ...client, user_id: userId }])
+      .select();
+
     if (error) throw error;
-    if (data) set((state) => ({ clients: [...state.clients, data[0]].sort((a, b) => a.name.localeCompare(b.name)) }));
+    if (data && data[0]) {
+      const newClient = data[0];
+      set((state) => ({ clients: [...state.clients, newClient].sort((a, b) => a.name.localeCompare(b.name)) }));
+      return newClient; // <-- Retorna o novo cliente
+    }
+    // Lança um erro se `data` for nulo ou vazio
+    throw new Error("Não foi possível criar o cliente.");
   },
   updateClient: async (client) => {
     const { data, error } = await supabase.from('clients').update(client).eq('id', client.id).select();
@@ -120,7 +134,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({ products: state.products.filter((p) => p.id !== productId) }));
   },
 
-  // --- SERVIÇOS (NOVO) ---
+  // --- SERVIÇOS ---
   services: [],
   fetchServices: async (userId) => {
     set(state => ({ loading: { ...state.loading, services: true } }));
@@ -229,7 +243,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loading: {
     clients: true,
     products: true,
-    services: true, // <-- Adicionado
+    services: true,
     professionals: true,
     appointments: true,
     financialEntries: true,

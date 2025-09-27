@@ -8,16 +8,17 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { TimeSlotPicker } from '../components/TimeSlotPicker';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { Plus, X, User, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
+import { Plus, X, User, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Scissors, PlusCircle } from 'lucide-react';
 import moment from 'moment';
 import 'moment/locale/pt-br';
 import type { AppointmentType, ProfessionalType, ClientType, ServiceType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
+import ClientFormModal from '../components/ClientFormModal'; // 1. Importado o novo modal
 
 // --- PrimeReact Imports ---
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
-import { InputNumber } from 'primereact/inputnumber'; // 1. Importado o InputNumber
+import { InputNumber } from 'primereact/inputnumber';
 import 'primereact/resources/themes/tailwind-light/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
@@ -61,6 +62,9 @@ export default function Appointments() {
   const [editingAppointment, setEditingAppointment] = useState<AppointmentType | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<AppointmentType | null>(null);
+  
+  // 2. Adicionado estado para controlar o modal de cliente
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
   const {
     handleSubmit, reset, setValue, watch, control,
@@ -104,6 +108,15 @@ export default function Appointments() {
       }
     }
   }, [watchedServiceId, watchedStartDate, services, setValue, selectedService]);
+  
+  // 3. Função de callback para quando um cliente é criado
+  const handleClientCreated = (newClient: ClientType) => {
+    if (newClient && newClient.id) {
+      setIsClientModalOpen(false); // Fecha o modal de cliente
+      setValue('client_id', newClient.id, { shouldValidate: true }); // Define o novo cliente no formulário
+      showSuccess(`Cliente "${newClient.name}" selecionado!`);
+    }
+  };
 
   const professionalOptions = useMemo(() => {
     const allOption = { id: null, name: 'Todos os Profissionais', user_id: '' };
@@ -420,11 +433,23 @@ export default function Appointments() {
                        <button type="button" onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
                      </div>
                      <div className="space-y-4">
+                        {/* 4. Campo de cliente modificado */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
-                          <Dropdown value={clients.find(c => c.id === watchedClientId) || null} options={clients} onChange={(e) => setValue('client_id', e.value?.id)} optionLabel="name" placeholder="Selecione um cliente" itemTemplate={clientOptionTemplate} className="w-full" filter />
+                          <div className="flex items-center gap-2">
+                            <Dropdown value={clients.find(c => c.id === watchedClientId) || null} options={clients} onChange={(e) => setValue('client_id', e.value?.id)} optionLabel="name" placeholder="Selecione um cliente" itemTemplate={clientOptionTemplate} className="w-full" filter />
+                            <button
+                              type="button"
+                              onClick={() => setIsClientModalOpen(true)}
+                              className="p-2 text-gray-500 hover:text-pink-600 transition-colors"
+                              title="Adicionar Novo Cliente"
+                            >
+                              <PlusCircle className="w-5 h-5" />
+                            </button>
+                          </div>
                           {errors.client_id && <p className="mt-1 text-sm text-red-600">{errors.client_id.message}</p>}
                         </div>
+
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Profissional *</label>
                           <Dropdown value={professionals.find(p => p.id === watchedProfessionalId) || null} options={professionals} onChange={(e) => setValue('professional_id', e.value?.id)} optionLabel="name" placeholder="Selecione um profissional" valueTemplate={selectedProfessionalTemplate} itemTemplate={professionalOptionTemplate} className="w-full" />
@@ -436,7 +461,6 @@ export default function Appointments() {
                            {errors.service_id && <p className="mt-1 text-sm text-red-600">{errors.service_id.message}</p>}
                         </div>
                        
-                        {/* 2. Input de Preço substituído pelo Controller com InputNumber */}
                         <div>
                           <label htmlFor="price" className="block text-sm font-medium text-gray-700">Preço (R$) *</label>
                           <Controller
@@ -530,6 +554,14 @@ export default function Appointments() {
             </div>
            </div>
         )}
+
+        {/* 5. Renderização do novo modal de cliente */}
+        <ClientFormModal
+          isOpen={isClientModalOpen}
+          onClose={() => setIsClientModalOpen(false)}
+          onClientCreated={handleClientCreated}
+          editingClient={null} 
+        />
 
         <ConfirmationModal
           isOpen={isDeleteModalOpen}
