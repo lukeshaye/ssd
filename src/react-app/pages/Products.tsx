@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '@/react-app/auth/SupabaseAuthProvider';
 import { useAppStore } from '@/shared/store';
@@ -11,12 +11,13 @@ import { Package, Plus, Edit, Trash2, AlertTriangle, X, Search } from 'lucide-re
 import type { ProductType } from '@/shared/types';
 import { CreateProductSchema } from '@/shared/types';
 import { formatCurrency } from '@/react-app/utils';
+import { InputNumber } from 'primereact/inputnumber';
 
 // --- Definição de Tipos ---
 interface ProductFormData {
   name: string;
   description?: string;
-  price: number; // No formulário, usamos o valor em reais (ex: 10.50)
+  price: number;
   quantity?: number;
   image_url?: string;
 }
@@ -56,6 +57,7 @@ export default function Products() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
     resolver: zodResolver(CreateProductSchema) as any,
@@ -147,6 +149,8 @@ export default function Products() {
     setEditingProduct(null);
     reset(defaultFormValues);
   };
+
+
 
   const isLowStock = (quantity: number | null | undefined) => (quantity ?? 0) <= 5;
 
@@ -337,12 +341,24 @@ export default function Products() {
                           <label htmlFor="price" className="block text-sm font-medium text-gray-700">
                             Preço (R$) *
                           </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register('price', { valueAsNumber: true })}
-                            placeholder="45,50"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                          <Controller
+                            name="price"
+                            control={control}
+                            rules={{ required: 'O preço é obrigatório.' }}
+                            render={({ field, fieldState }) => (
+                              <InputNumber
+                                id={field.name}
+                                ref={field.ref}
+                                value={field.value}
+                                onBlur={field.onBlur}
+                                onValueChange={(e) => field.onChange(e.value)}
+                                mode="currency"
+                                currency="BRL"
+                                locale="pt-BR"
+                                placeholder="R$ 45,50"
+                                className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                              />
+                            )}
                           />
                           {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
                         </div>

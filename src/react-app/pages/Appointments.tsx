@@ -17,6 +17,7 @@ import { AppointmentFormSchema } from '../../shared/types';
 // --- PrimeReact Imports ---
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
+import { InputNumber } from 'primereact/inputnumber'; // 1. Importado o InputNumber
 import 'primereact/resources/themes/tailwind-light/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
@@ -62,7 +63,7 @@ export default function Appointments() {
   const [appointmentToDelete, setAppointmentToDelete] = useState<AppointmentType | null>(null);
 
   const {
-    register, handleSubmit, reset, setValue, watch, control,
+    handleSubmit, reset, setValue, watch, control,
     formState: { errors }
   } = useForm<AppointmentFormData>({
     resolver: zodResolver(AppointmentFormSchema),
@@ -162,7 +163,6 @@ export default function Appointments() {
     } else {
       setEditingAppointment(null);
       
-      // Garante que a data inicial para um novo agendamento não seja no passado.
       const initialDate = slotDate || (currentDate && moment(currentDate).isAfter(moment()) ? currentDate : new Date());
       
       reset({
@@ -435,11 +435,31 @@ export default function Appointments() {
                           <Dropdown value={services.find(s => s.id === watchedServiceId) || null} options={services} onChange={(e) => setValue('service_id', e.value?.id)} optionLabel="name" placeholder="Selecione um serviço" itemTemplate={serviceOptionTemplate} className="w-full" filter />
                            {errors.service_id && <p className="mt-1 text-sm text-red-600">{errors.service_id.message}</p>}
                         </div>
-                       <div>
-                         <label htmlFor="price" className="block text-sm font-medium text-gray-700">Preço (R$) *</label>
-                         <input type="number" step="0.01" {...register('price', { valueAsNumber: true })} placeholder="50,00" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
-                         {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
-                       </div>
+                       
+                        {/* 2. Input de Preço substituído pelo Controller com InputNumber */}
+                        <div>
+                          <label htmlFor="price" className="block text-sm font-medium text-gray-700">Preço (R$) *</label>
+                          <Controller
+                              name="price"
+                              control={control}
+                              rules={{ required: 'O preço é obrigatório.' }}
+                              render={({ field, fieldState }) => (
+                                  <InputNumber
+                                      id={field.name}
+                                      ref={field.ref}
+                                      value={field.value}
+                                      onBlur={field.onBlur}
+                                      onValueChange={(e) => field.onChange(e.value)}
+                                      mode="currency"
+                                      currency="BRL"
+                                      locale="pt-BR"
+                                      placeholder="R$ 50,00"
+                                      className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                                  />
+                              )}
+                          />
+                          {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
+                        </div>
                        
                        <div>
                           <label htmlFor="appointment_date_date" className="block text-sm font-medium text-gray-700 mb-1">Data *</label>
@@ -456,7 +476,6 @@ export default function Appointments() {
                                           currentDate.year(newDate.year()).month(newDate.month()).date(newDate.date());
                                           field.onChange(currentDate.toDate());
                                       }}
-                                      // CORREÇÃO: Apenas no modal a data mínima é aplicada
                                       minDate={!editingAppointment ? new Date() : undefined}
                                       dateFormat="dd/mm/yy"
                                       className="w-full"

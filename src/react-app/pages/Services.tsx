@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form'; // 1. Importe o Controller
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '@/react-app/auth/SupabaseAuthProvider';
 import { useAppStore } from '@/shared/store';
@@ -11,6 +11,7 @@ import { Scissors, Plus, Edit, Trash2, Clock, X, Search } from 'lucide-react';
 import type { ServiceType } from '@/shared/types';
 import { CreateServiceSchema } from '@/shared/types';
 import { formatCurrency } from '@/react-app/utils';
+import { InputNumber } from 'primereact/inputnumber'; // 2. Importe o InputNumber
 
 // --- Definição de Tipos ---
 interface ServiceFormData {
@@ -54,6 +55,7 @@ export default function Services() {
     register,
     handleSubmit,
     reset,
+    control, // Obtenha o control do useForm
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormData>({
     resolver: zodResolver(CreateServiceSchema) as any,
@@ -80,6 +82,8 @@ export default function Services() {
   const onSubmit = async (formData: ServiceFormData) => {
     if (!user) return;
 
+    // O valor de 'price' já vem como número do InputNumber,
+    // mas a multiplicação por 100 para armazenar em centavos ainda é necessária.
     const serviceData = {
       ...formData,
       price: Math.round(Number(formData.price) * 100),
@@ -133,7 +137,7 @@ export default function Services() {
     reset({
       name: service.name,
       description: service.description || '',
-      price: service.price / 100,
+      price: service.price / 100, // Ajuste para exibir o valor correto no formulário
       duration: service.duration,
     });
     setIsModalOpen(true);
@@ -316,12 +320,25 @@ export default function Services() {
                           <label htmlFor="price" className="block text-sm font-medium text-gray-700">
                             Preço (R$) *
                           </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            {...register('price', { valueAsNumber: true })}
-                            placeholder="45,50"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                           {/* 3. Substitua o input pelo Controller com InputNumber */}
+                          <Controller
+                            name="price"
+                            control={control}
+                            rules={{ required: 'O preço é obrigatório.' }}
+                            render={({ field, fieldState }) => (
+                                <InputNumber
+                                    id={field.name}
+                                    ref={field.ref}
+                                    value={field.value}
+                                    onBlur={field.onBlur}
+                                    onValueChange={(e) => field.onChange(e.value)}
+                                    mode="currency"
+                                    currency="BRL"
+                                    locale="pt-BR"
+                                    placeholder="R$ 45,50"
+                                    className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                                />
+                            )}
                           />
                           {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
                         </div>

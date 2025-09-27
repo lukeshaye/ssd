@@ -32,6 +32,7 @@ import moment from 'moment';
 // --- PrimeReact Imports ---
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
+import { InputNumber } from 'primereact/inputnumber';
 import 'primereact/resources/themes/tailwind-light/theme.css';
 import 'primereact/resources/primereact.min.css';
 import 'primeicons/primeicons.css';
@@ -358,51 +359,58 @@ export default function Financial() {
         </div>
 
         {/* ======================================================= */}
-        {/* --- INÍCIO DA SEÇÃO ATUALIZADA --- */}
+        {/* --- INÍCIO DA SEÇÃO CORRIGIDA --- */}
         {/* ======================================================= */}
         <div className="mt-8">
             <div className="bg-white shadow-sm rounded-lg border border-gray-200">
                 <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-4">
-                      <div className="sm:col-span-1">
-                          <h3 className="text-lg font-medium text-gray-900 whitespace-nowrap">
-                              Lançamentos do Mês
-                          </h3>
-                      </div>
+                  {/* Container principal com Flexbox para melhor responsividade */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    
+                    {/* Lado Esquerdo: Título */}
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900 whitespace-nowrap">
+                        Lançamentos do Mês
+                      </h3>
+                    </div>
+                    
+                    {/* Lado Direito: Controles (Navegação de Mês + Filtros) */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 flex-wrap">
                       
-                      <div className="sm:col-span-1 flex items-center justify-center order-first sm:order-none">
-                          <button onClick={handlePreviousMonth} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                              <ChevronLeft className="h-5 w-5 text-gray-600" />
-                          </button>
-                          <div className="text-center mx-2">
-                              <h2 className="text-base font-semibold text-gray-800 capitalize">{formattedMonth}</h2>
-                              <button onClick={handleCurrentMonth} className="text-xs text-pink-600 hover:underline">Mês Atual</button>
-                          </div>
-                          <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                              <ChevronRight className="h-5 w-5 text-gray-600" />
-                          </button>
+                      {/* Navegação de Mês */}
+                      <div className="flex items-center justify-center">
+                        <button onClick={handlePreviousMonth} className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
+                          <ChevronLeft className="h-5 w-5 text-gray-600" />
+                        </button>
+                        <div className="text-center mx-2">
+                          <h2 className="text-base font-semibold text-gray-800 capitalize whitespace-nowrap">{formattedMonth}</h2>
+                          <button onClick={handleCurrentMonth} className="text-xs text-pink-600 hover:underline">Mês Atual</button>
+                        </div>
+                        <button onClick={handleNextMonth} className="p-2 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0">
+                          <ChevronRight className="h-5 w-5 text-gray-600" />
+                        </button>
                       </div>
 
-                      <div className="sm:col-span-1 flex flex-col sm:flex-row items-center sm:justify-end gap-4 w-full">
-                          {/* Dropdown de Tipos ATUALIZADO */}
-                          <Dropdown
-                            value={typeFilter}
-                            options={typeFilterOptions}
-                            onChange={(e) => setTypeFilter(e.value)}
-                            className="w-full sm:w-auto"
-                          />
-                          {/* Dropdown de Frequências ATUALIZADO */}
-                          <Dropdown
-                            value={frequencyFilter}
-                            options={frequencyFilterOptions}
-                            onChange={(e) => setFrequencyFilter(e.value)}
-                            className="w-full sm:w-auto"
-                          />
+                      {/* Filtros */}
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <Dropdown
+                          value={typeFilter}
+                          options={typeFilterOptions}
+                          onChange={(e) => setTypeFilter(e.value)}
+                          className="w-full min-w-[150px]"
+                        />
+                        <Dropdown
+                          value={frequencyFilter}
+                          options={frequencyFilterOptions}
+                          onChange={(e) => setFrequencyFilter(e.value)}
+                          className="w-full min-w-[150px]"
+                        />
                       </div>
+                    </div>
                   </div>
                 </div>
         {/* ======================================================= */}
-        {/* --- FIM DA SEÇÃO ATUALIZADA --- */}
+        {/* --- FIM DA SEÇÃO CORRIGIDA --- */}
         {/* ======================================================= */}
 
                 {filteredEntries.length === 0 ? (
@@ -559,8 +567,19 @@ export default function Financial() {
                           name="amount"
                           control={control}
                           rules={{ required: 'Valor é obrigatório' }}
-                          render={({ field }) => (
-                            <input {...field} id="amount" value={field.value ?? ''} type="number" step="0.01" placeholder="150,00" className="p-inputtext p-component w-full" />
+                          render={({ field, fieldState }) => (
+                            <InputNumber
+                                id={field.name}
+                                ref={field.ref}
+                                value={field.value}
+                                onBlur={field.onBlur}
+                                onValueChange={(e) => field.onChange(e.value)}
+                                mode="currency"
+                                currency="BRL"
+                                locale="pt-BR"
+                                placeholder="R$ 150,00"
+                                className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                            />
                           )}
                       />
                       {errors.amount && <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>}
