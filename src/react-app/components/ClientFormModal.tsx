@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { X, User, Mail, Phone, MessageSquare } from 'lucide-react';
+import { X, User, Mail, Phone } from 'lucide-react'; // Ícone de notas removido
 import type { ClientType } from '../../shared/types';
 import { CreateClientSchema } from '../../shared/types';
 
@@ -103,7 +103,7 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
               </div>
               <div className="space-y-4">
                 
-                {/* Campo Nome com PrimeReact */}
+                {/* Campo Nome */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
                   <Controller
@@ -116,7 +116,6 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                           id={field.name} 
                           {...field} 
                           placeholder="Ex: Maria Silva"
-                          // CORREÇÃO: Adicionado pl-10 para o padding
                           className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`} 
                         />
                       </span>
@@ -125,7 +124,7 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                   {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
                 </div>
 
-                {/* Campo Telefone com PrimeReact InputMask */}
+                {/* Campo Telefone */}
                 <div>
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
                    <Controller
@@ -139,7 +138,6 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                           {...field}
                           mask="(99) 99999-9999" 
                           placeholder="(11) 99999-9999" 
-                          // CORREÇÃO: Adicionado pl-10 para o padding
                           className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
                           unmask={true}
                         />
@@ -149,7 +147,7 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                   {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
                 </div>
 
-                {/* Campo Email com PrimeReact */}
+                {/* Campo Email */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                   <Controller
@@ -163,7 +161,6 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                           {...field} 
                           type="email"
                           placeholder="Ex: maria@email.com"
-                          // CORREÇÃO: Adicionado pl-10 para o padding
                           className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
                         />
                        </span>
@@ -172,28 +169,23 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                 </div>
                 
-                {/* Campo Notas com PrimeReact */}
+                {/* Campo Notas (sem ícone) */}
                 <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
-                   <Controller
-                    name="notes"
-                    control={control}
-                    render={({ field }) => (
-                      <span className="p-input-icon-left w-full">
-                        {/* CORREÇÃO: Ícone posicionado para não sobrepor */}
-                        <MessageSquare className="h-4 w-4 text-gray-400 absolute top-3 left-3" />
-                        <InputTextarea 
-                          id={field.name} 
-                          {...field}
-                          rows={3} 
-                          // CORREÇÃO: Adicionado pl-10 para o padding
-                          className="w-full pl-10" 
-                          placeholder="Preferências, observações..."
-                        />
-                      </span>
-                    )}
-                  />
-                  {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
+                    <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                    <Controller
+                        name="notes"
+                        control={control}
+                        render={({ field }) => (
+                            <InputTextarea
+                                id={field.name}
+                                {...field}
+                                rows={3}
+                                className="w-full"
+                                placeholder="Preferências, observações..."
+                            />
+                        )}
+                    />
+                    {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
                 </div>
 
               </div>
