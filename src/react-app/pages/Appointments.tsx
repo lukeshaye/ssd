@@ -8,12 +8,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { TimeSlotPicker } from '../components/TimeSlotPicker';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { Plus, X, User, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Scissors, PlusCircle } from 'lucide-react';
+import { Plus, X, User, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Scissors } from 'lucide-react';
 import moment from 'moment';
 import 'moment/locale/pt-br';
 import type { AppointmentType, ProfessionalType, ClientType, ServiceType } from '../../shared/types';
 import { AppointmentFormSchema } from '../../shared/types';
-import ClientFormModal from '../components/ClientFormModal'; // 1. Importado o novo modal
+import ClientFormModal from '../components/ClientFormModal';
 
 // --- PrimeReact Imports ---
 import { Calendar } from 'primereact/calendar';
@@ -63,7 +63,6 @@ export default function Appointments() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState<AppointmentType | null>(null);
   
-  // 2. Adicionado estado para controlar o modal de cliente
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
   const {
@@ -109,11 +108,10 @@ export default function Appointments() {
     }
   }, [watchedServiceId, watchedStartDate, services, setValue, selectedService]);
   
-  // 3. Função de callback para quando um cliente é criado
   const handleClientCreated = (newClient: ClientType) => {
     if (newClient && newClient.id) {
-      setIsClientModalOpen(false); // Fecha o modal de cliente
-      setValue('client_id', newClient.id, { shouldValidate: true }); // Define o novo cliente no formulário
+      setIsClientModalOpen(false);
+      setValue('client_id', newClient.id, { shouldValidate: true });
       showSuccess(`Cliente "${newClient.name}" selecionado!`);
     }
   };
@@ -433,7 +431,7 @@ export default function Appointments() {
                        <button type="button" onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
                      </div>
                      <div className="space-y-4">
-                        {/* 4. Campo de cliente modificado */}
+                        {/* BOTÃO MODIFICADO */}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
                           <div className="flex items-center gap-2">
@@ -441,10 +439,10 @@ export default function Appointments() {
                             <button
                               type="button"
                               onClick={() => setIsClientModalOpen(true)}
-                              className="p-2 text-gray-500 hover:text-pink-600 transition-colors"
+                              className="flex-shrink-0 rounded-full bg-gradient-to-r from-pink-500 to-violet-500 p-2 text-white shadow-sm hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
                               title="Adicionar Novo Cliente"
                             >
-                              <PlusCircle className="w-5 h-5" />
+                              <Plus className="h-4 w-4" />
                             </button>
                           </div>
                           {errors.client_id && <p className="mt-1 text-sm text-red-600">{errors.client_id.message}</p>}
@@ -555,7 +553,6 @@ export default function Appointments() {
            </div>
         )}
 
-        {/* 5. Renderização do novo modal de cliente */}
         <ClientFormModal
           isOpen={isClientModalOpen}
           onClose={() => setIsClientModalOpen(false)}
