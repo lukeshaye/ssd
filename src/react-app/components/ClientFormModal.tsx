@@ -1,14 +1,19 @@
 // src/react-app/components/ClientFormModal.tsx
 
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { X } from 'lucide-react';
+import { X, User, Mail, Phone, MessageSquare } from 'lucide-react';
 import type { ClientType } from '../../shared/types';
 import { CreateClientSchema } from '../../shared/types';
+
+// --- PrimeReact Imports ---
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
+import { InputMask } from 'primereact/inputmask';
 
 // --- Definição de Tipos ---
 interface ClientFormData {
@@ -21,7 +26,7 @@ interface ClientFormData {
 interface ClientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onClientCreated: (client: ClientType) => void; // Callback para o pai
+  onClientCreated: (client: ClientType) => void;
   editingClient: ClientType | null;
 }
 
@@ -38,7 +43,7 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
   const { showSuccess, showError } = useToastHelpers();
 
   const {
-    register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -53,14 +58,12 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
     if (!user) return;
     try {
       if (editingClient) {
-        // A lógica de edição permanece para reutilização, mas não será usada no atalho.
         await updateClient({ ...editingClient, ...formData });
         showSuccess('Cliente atualizado!');
       } else {
-        // Foco na criação de um novo cliente
         const newClient = await addClient(formData, user.id);
         showSuccess('Cliente adicionado!');
-        onClientCreated(newClient); // Executa o callback com o novo cliente
+        onClientCreated(newClient);
       }
       onClose();
     } catch (error) {
@@ -68,17 +71,23 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
     }
   };
   
-  // Reseta o formulário ao fechar
   useEffect(() => {
     if (!isOpen) {
       reset(defaultFormValues);
+    } else if (editingClient) {
+        reset({
+            name: editingClient.name,
+            phone: editingClient.phone || '',
+            email: editingClient.email || '',
+            notes: editingClient.notes || '',
+        });
     }
-  }, [isOpen, reset]);
+  }, [isOpen, editingClient, reset]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen p-4 text-center">
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose} aria-hidden="true"></div>
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
@@ -92,28 +101,101 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                   <X className="w-6 h-6" />
                 </button>
               </div>
-              {/* Conteúdo do formulário (copiado de Clients.tsx) */}
               <div className="space-y-4">
+                
+                {/* Campo Nome com PrimeReact */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">Nome *</label>
-                  <input type="text" {...register('name')} placeholder="Ex: Maria Silva" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Nome *</label>
+                  <Controller
+                    name="name"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <span className="p-input-icon-left w-full">
+                        <User className="h-4 w-4 text-gray-400" />
+                        <InputText 
+                          id={field.name} 
+                          {...field} 
+                          placeholder="Ex: Maria Silva"
+                          // CORREÇÃO: Adicionado pl-10 para o padding
+                          className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`} 
+                        />
+                      </span>
+                    )}
+                  />
                   {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
                 </div>
+
+                {/* Campo Telefone com PrimeReact InputMask */}
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Telefone</label>
-                  <input type="tel" {...register('phone')} placeholder="Ex: (11) 99999-9999" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                   <Controller
+                    name="phone"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                      <span className="p-input-icon-left w-full">
+                        <Phone className="h-4 w-4 text-gray-400" />
+                        <InputMask 
+                          id={field.name}
+                          {...field}
+                          mask="(99) 99999-9999" 
+                          placeholder="(11) 99999-9999" 
+                          // CORREÇÃO: Adicionado pl-10 para o padding
+                          className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
+                          unmask={true}
+                        />
+                      </span>
+                    )}
+                  />
                   {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
                 </div>
+
+                {/* Campo Email com PrimeReact */}
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-                  <input type="email" {...register('email')} placeholder="Ex: maria@email.com" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" />
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <Controller
+                    name="email"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                       <span className="p-input-icon-left w-full">
+                        <Mail className="h-4 w-4 text-gray-400" />
+                        <InputText 
+                          id={field.name} 
+                          {...field} 
+                          type="email"
+                          placeholder="Ex: maria@email.com"
+                          // CORREÇÃO: Adicionado pl-10 para o padding
+                          className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
+                        />
+                       </span>
+                    )}
+                  />
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                 </div>
+                
+                {/* Campo Notas com PrimeReact */}
                 <div>
-                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notas</label>
-                  <textarea {...register('notes')} rows={3} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm" placeholder="Preferências, observações..."/>
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                   <Controller
+                    name="notes"
+                    control={control}
+                    render={({ field }) => (
+                      <span className="p-input-icon-left w-full">
+                        {/* CORREÇÃO: Ícone posicionado para não sobrepor */}
+                        <MessageSquare className="h-4 w-4 text-gray-400 absolute top-3 left-3" />
+                        <InputTextarea 
+                          id={field.name} 
+                          {...field}
+                          rows={3} 
+                          // CORREÇÃO: Adicionado pl-10 para o padding
+                          className="w-full pl-10" 
+                          placeholder="Preferências, observações..."
+                        />
+                      </span>
+                    )}
+                  />
                   {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
                 </div>
+
               </div>
             </div>
             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">

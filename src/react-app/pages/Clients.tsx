@@ -1,30 +1,17 @@
+// src/react-app/pages/Clients.tsx
+
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+// O useForm e o Zod não são mais necessários aqui, pois o modal cuidará disso.
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { Users, Plus, Edit, Trash2, Phone, Mail, MessageCircle, X } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Phone, Mail, MessageCircle } from 'lucide-react';
 import type { ClientType } from '../../shared/types';
-import { CreateClientSchema } from '../../shared/types';
-
-// --- Definição de Tipos ---
-interface ClientFormData {
-  name: string;
-  phone?: string;
-  email?: string;
-  notes?: string;
-}
-
-const defaultFormValues: ClientFormData = {
-    name: '',
-    phone: '',
-    email: '',
-    notes: '',
-};
+// Importamos o nosso novo modal
+import ClientFormModal from '../components/ClientFormModal';
 
 /**
  * Página para gerir os clientes (Criar, Ler, Atualizar, Apagar).
@@ -35,9 +22,7 @@ export default function Clients() {
     clients, 
     loading, 
     fetchClients, 
-    addClient, 
-    updateClient, 
-    deleteClient 
+    deleteClient // A lógica de add/update agora está no modal
   } = useAppStore();
   const { showSuccess, showError } = useToastHelpers();
   
@@ -47,15 +32,7 @@ export default function Clients() {
   const [clientToDelete, setClientToDelete] = useState<ClientType | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ClientFormData>({
-    resolver: zodResolver(CreateClientSchema),
-    defaultValues: defaultFormValues
-  });
+  // A lógica do formulário (useForm, onSubmit) foi movida para o ClientFormModal.
 
   useEffect(() => {
     if (user) {
@@ -63,22 +40,6 @@ export default function Clients() {
     }
   }, [user, fetchClients]);
 
-  const onSubmit = async (formData: ClientFormData) => {
-    if (!user) return;
-    try {
-      if (editingClient) {
-        await updateClient({ ...editingClient, ...formData });
-        showSuccess('Cliente atualizado!', 'As alterações foram salvas com sucesso.');
-      } else {
-        await addClient(formData, user.id);
-        showSuccess('Cliente adicionado!', 'O novo cliente foi adicionado à sua base de dados.');
-      }
-      handleCloseModal();
-    } catch (error) {
-      console.error('Erro ao salvar cliente:', (error as Error).message);
-      showError('Erro ao salvar cliente', 'Tente novamente ou contacte o suporte se o problema persistir.');
-    }
-  };
 
   const handleDeleteClick = (client: ClientType) => {
     setClientToDelete(client);
@@ -107,21 +68,21 @@ export default function Clients() {
     setClientToDelete(null);
   };
   
+  // Simplificamos a função de editar: agora ela apenas define o cliente e abre o modal.
   const handleEditClient = (client: ClientType) => {
     setEditingClient(client);
-    reset({
-      name: client.name,
-      phone: client.phone || '',
-      email: client.email || '',
-      notes: client.notes || '',
-    });
+    setIsModalOpen(true);
+  };
+  
+  // Simplificamos a função de novo cliente.
+  const handleNewClient = () => {
+    setEditingClient(null);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingClient(null);
-    reset(defaultFormValues);
   };
   
   const sendWhatsAppMessage = (client: ClientType) => {
@@ -147,7 +108,7 @@ export default function Clients() {
           <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
             <button
               type="button"
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleNewClient}
               className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-pink-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -167,7 +128,7 @@ export default function Clients() {
               <div className="mt-6">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={handleNewClient}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -217,9 +178,7 @@ export default function Clients() {
                     </div>
                   </div>
 
-                  {/* UX Melhorada: Div dos botões com layout corrigido */}
                   <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                    {/* Grupo de Ações Primárias (Editar/Excluir) */}
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => handleEditClient(client)}
@@ -238,7 +197,6 @@ export default function Clients() {
                       </button>
                     </div>
                     
-                    {/* Ação Secundária (WhatsApp) */}
                     {client.phone && (
                       <button
                         onClick={() => sendWhatsAppMessage(client)}
@@ -255,103 +213,14 @@ export default function Clients() {
           )}
         </div>
 
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-              <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={handleCloseModal}></div>
-
-              <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <form onSubmit={handleSubmit(onSubmit)}>
-                  <div className="bg-white px-4 pt-5 pb-4 sm:p-8 sm:pb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        {editingClient ? 'Editar Cliente' : 'Novo Cliente'}
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={handleCloseModal}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="w-6 h-6" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                          Nome *
-                        </label>
-                        <input
-                          type="text"
-                          {...register('name')}
-                          placeholder="Ex: Maria Silva"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                        />
-                        {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
-                      </div>
-
-                      <div>
-                        <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                          Telefone
-                        </label>
-                        <input
-                          type="tel"
-                          {...register('phone')}
-                          placeholder="Ex: (11) 99999-9999"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                        />
-                        {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
-                      </div>
-
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          {...register('email')}
-                          placeholder="Ex: maria@email.com"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                        />
-                        {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-                      </div>
-
-                      <div>
-                        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
-                          Notas
-                        </label>
-                        <textarea
-                          {...register('notes')}
-                          rows={3}
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                          placeholder="Preferências, observações, histórico..."
-                        />
-                        {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-pink-500 to-violet-500 text-base font-medium text-white hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
-                    >
-                      {isSubmitting ? 'Salvando...' : (editingClient ? 'Atualizar' : 'Criar')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCloseModal}
-                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* SUBSTITUIÇÃO DO MODAL ANTIGO PELO NOVO COMPONENTE */}
+        <ClientFormModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          editingClient={editingClient}
+          // A função de callback não precisa fazer nada aqui, pois o store já atualiza a lista
+          onClientCreated={() => {}} 
+        />
 
         <ConfirmationModal
           isOpen={isDeleteModalOpen}

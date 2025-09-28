@@ -1,3 +1,5 @@
+// src/shared/types.ts
+
 import { z } from "zod";
 
 // =================================================================
@@ -8,10 +10,14 @@ export const ClientSchema = z.object({
   user_id: z.string(),
   name: z.string().min(1, "Nome do cliente é obrigatório"),
   phone: z.string().optional().nullable(),
-  email: z.string().email("Email inválido").optional().nullable(),
+  // CORREÇÃO APLICADA AQUI:
+  // .or(z.literal("")) permite que o campo seja uma string vazia.
+  // .optional().nullable() garante que ele também pode ser nulo ou ausente.
+  email: z.string().email({ message: "Email inválido" }).or(z.literal("")).optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export const CreateClientSchema = ClientSchema.omit({ id: true, user_id: true });
+
 
 // =================================================================
 // --- Schemas de Profissionais (COM CAMPO DE COR) ---
