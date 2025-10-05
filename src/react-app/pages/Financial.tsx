@@ -307,12 +307,39 @@ export default function Financial() {
       didDrawPage: function (data) {
         const finalY = data.cursor?.y;
         if (finalY) {
+            const startY = finalY + 10;
+            const labelX = 14; // Posição inicial dos rótulos
+            const valueX = 55; // Posição inicial dos valores (ajuste se necessário)
+
+            // --- Receita Total ---
             doc.setFontSize(10);
-            doc.text(`Receita Total: ${formatCurrency(kpis.monthlyRevenue)}`, 14, finalY + 10);
-            doc.text(`Despesa Total: ${formatCurrency(kpis.monthlyExpenses)}`, 14, finalY + 15);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0, 0, 0); // Cor preta para o rótulo
+            doc.text('Receita Total:', labelX, startY);
+            
+            doc.setTextColor(0, 128, 0); // Cor verde para o valor
+            doc.text(formatCurrency(kpis.monthlyRevenue), valueX, startY);
+
+            // --- Despesa Total ---
+            doc.setTextColor(0, 0, 0); // Cor preta para o rótulo
+            doc.text('Despesa Total:', labelX, startY + 5);
+
+            doc.setTextColor(255, 0, 0); // Cor vermelha para o valor
+            doc.text(formatCurrency(kpis.monthlyExpenses), valueX, startY + 5);
+
+            // --- Lucro Líquido ---
             doc.setFontSize(12);
             doc.setFont('helvetica', 'bold');
-            doc.text(`Lucro Líquido: ${formatCurrency(kpis.netProfit)}`, 14, finalY + 22);
+            doc.setTextColor(0, 0, 0); // Cor preta para o rótulo
+            doc.text('Lucro Líquido:', labelX, startY + 12);
+
+            // Cor condicional para o valor do lucro
+            const netProfitColor = kpis.netProfit >= 0 ? [0, 128, 0] : [255, 0, 0];
+            doc.setTextColor(netProfitColor[0], netProfitColor[1], netProfitColor[2]);
+            doc.text(formatCurrency(kpis.netProfit), valueX, startY + 12);
+
+            // Resetar a cor para o padrão (preto)
+            doc.setTextColor(0, 0, 0);
         }
       },
     });
