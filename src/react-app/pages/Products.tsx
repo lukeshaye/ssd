@@ -7,18 +7,20 @@ import Layout from '@/react-app/components/Layout';
 import LoadingSpinner from '@/react-app/components/LoadingSpinner';
 import ConfirmationModal from '@/react-app/components/ConfirmationModal';
 import { useToastHelpers } from '@/react-app/contexts/ToastContext';
-import { Package, Plus, Edit, Trash2, AlertTriangle, X, Search } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, AlertTriangle, X, Search, DollarSign, Hash, Link as LinkIcon } from 'lucide-react';
 import type { ProductType } from '@/shared/types';
 import { CreateProductSchema } from '@/shared/types';
 import { formatCurrency } from '@/react-app/utils';
 import { InputNumber } from 'primereact/inputnumber';
+import { InputText } from 'primereact/inputtext';
+import { InputTextarea } from 'primereact/inputtextarea';
 
 // --- Definição de Tipos ---
 interface ProductFormData {
   name: string;
   description?: string;
-  price: number;
-  quantity?: number;
+  price: number | null;
+  quantity?: number | null;
   image_url?: string;
 }
 
@@ -26,8 +28,8 @@ interface ProductFormData {
 const defaultFormValues: ProductFormData = {
   name: '',
   description: '',
-  price: 0,
-  quantity: 0,
+  price: null,
+  quantity: null,
   image_url: '',
 };
 
@@ -54,7 +56,6 @@ export default function Products() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const {
-    register,
     handleSubmit,
     reset,
     control,
@@ -160,7 +161,7 @@ export default function Products() {
 
   return (
     <Layout>
-      <div className="px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8 pb-24 lg:pb-8">
         <div className="sm:flex sm:items-center">
           <div className="sm:flex-auto">
             <h1 className="text-3xl font-bold text-gray-900">Produtos</h1>
@@ -170,7 +171,7 @@ export default function Products() {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-pink-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
+              className="hidden sm:inline-flex items-center justify-center rounded-md border border-transparent bg-gradient-to-r from-pink-500 to-violet-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2"
             >
               <Plus className="w-4 h-4 mr-2" />
               Novo Produto
@@ -221,69 +222,118 @@ export default function Products() {
               )}
             </div>
           ) : (
-            <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-              {filteredProducts.map((product: ProductType) => (
-                <div
-                  key={product.id}
-                  className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
-                >
-                  {product.image_url && (
-                    <div className="h-48 w-full overflow-hidden">
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    </div>
-                  )}
+            <>
+              {/* --- VISÃO DESKTOP (GRID) --- */}
+              <div className="hidden lg:grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+                {filteredProducts.map((product: ProductType) => (
+                  <div
+                    key={product.id}
+                    className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                  >
+                    {product.image_url && (
+                      <div className="h-48 w-full overflow-hidden">
+                        <img
+                          src={product.image_url}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                          onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+                    )}
 
-                  <div className="px-6 py-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
-                        {product.description && (
-                          <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+                    <div className="px-6 py-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
+                          {product.description && (
+                            <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+                          )}
+                        </div>
+                        {isLowStock(product.quantity) && (
+                          <div className="flex items-center ml-3">
+                            <AlertTriangle className="w-5 h-5 text-amber-500" />
+                            <span className="text-xs text-amber-700 ml-1">Estoque baixo</span>
+                          </div>
                         )}
                       </div>
-                      {isLowStock(product.quantity) && (
-                        <div className="flex items-center ml-3">
-                          <AlertTriangle className="w-5 h-5 text-amber-500" />
-                          <span className="text-xs text-amber-700 ml-1">Estoque baixo</span>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-lg font-bold text-green-600">
+                          {formatCurrency(product.price)}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="text-lg font-bold text-green-600">
-                        {formatCurrency(product.price)}
-                      </div>
-                      <div className={`text-sm ${isLowStock(product.quantity) ? 'text-amber-600 font-medium' : 'text-gray-600'}`}>
-                        Estoque: {product.quantity || 0}
+                        <div className={`text-sm ${isLowStock(product.quantity) ? 'text-amber-600 font-medium' : 'text-gray-600'}`}>
+                          Estoque: {product.quantity || 0}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between space-x-3">
-                    <button
-                      onClick={() => handleEditProduct(product)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                    >
-                      <Edit className="w-4 h-4 mr-1" />
-                      Editar
-                    </button>
+                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex justify-between space-x-3">
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </button>
 
-                    <button
-                      onClick={() => handleDeleteClick(product)}
-                      className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" />
-                      Excluir
-                    </button>
+                      <button
+                        onClick={() => handleDeleteClick(product)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Excluir
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+
+              {/* --- VISÃO MOBILE (LISTA DE CARDS) --- */}
+              <div className="lg:hidden space-y-4">
+                {filteredProducts.map((product) => (
+                  <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                    {product.image_url && (
+                        <img 
+                            src={product.image_url} 
+                            alt={product.name} 
+                            className="h-32 w-full object-cover rounded-md mb-4"
+                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                    )}
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800 break-words">{product.name}</h3>
+                        {product.description && (
+                          <p className="text-sm text-gray-500 mt-1">{product.description}</p>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-bold text-lg text-green-600">{formatCurrency(product.price)}</p>
+                        <div className={`text-sm mt-1 ${isLowStock(product.quantity) ? 'text-amber-600 font-medium' : 'text-gray-600'}`}>
+                          Estoque: {product.quantity || 0}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(product)}
+                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1.5" />
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
 
@@ -308,84 +358,126 @@ export default function Products() {
                       </button>
                     </div>
 
-
                     <div className="space-y-4">
                       <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                           Nome *
                         </label>
-                        <input
-                          type="text"
-                          {...register('name')}
-                          placeholder="Ex: Shampoo Hidratante"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                        <Controller
+                            name="name"
+                            control={control}
+                            render={({ field, fieldState }) => (
+                                <span className="p-input-icon-left w-full">
+                                    <Package className="h-5 w-5 text-gray-400" />
+                                    <InputText
+                                        id={field.name}
+                                        {...field}
+                                        placeholder="Ex: Shampoo Hidratante"
+                                        className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
+                                    />
+                                </span>
+                            )}
                         />
                         {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
                       </div>
 
                       <div>
-                        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
                           Descrição
                         </label>
-                        <textarea
-                          {...register('description')}
-                          rows={3}
-                          placeholder="Shampoo para cabelos secos, 250ml"
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                        <Controller
+                            name="description"
+                            control={control}
+                            render={({ field, fieldState }) => (
+                                <InputTextarea
+                                    id={field.name}
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    rows={3}
+                                    placeholder="Shampoo para cabelos secos, 250ml"
+                                    className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                                />
+                            )}
                         />
                         {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label htmlFor="price" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
                             Preço (R$) *
                           </label>
                           <Controller
                             name="price"
                             control={control}
-                            rules={{ required: 'O preço é obrigatório.' }}
                             render={({ field, fieldState }) => (
-                              <InputNumber
-                                id={field.name}
-                                ref={field.ref}
-                                value={field.value}
-                                onBlur={field.onBlur}
-                                onValueChange={(e) => field.onChange(e.value)}
-                                mode="currency"
-                                currency="BRL"
-                                locale="pt-BR"
-                                placeholder="R$ 45,50"
-                                className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
-                              />
+                                <span className="p-input-icon-left w-full">
+                                    <DollarSign className="h-5 w-5 text-gray-400" />
+                                    <InputNumber
+                                        id={field.name}
+                                        ref={field.ref}
+                                        value={field.value}
+                                        onBlur={field.onBlur}
+                                        onValueChange={(e) => field.onChange(e.value)}
+                                        mode="currency"
+                                        currency="BRL"
+                                        locale="pt-BR"
+                                        placeholder="R$ 45,50"
+                                        className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                                        inputClassName="w-full pl-10"
+                                    />
+                                </span>
                             )}
                           />
                           {errors.price && <p className="mt-1 text-sm text-red-600">{errors.price.message}</p>}
                         </div>
 
                         <div>
-                          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
+                          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
                             Quantidade *
                           </label>
-                          <input
-                            type="number"
-                            {...register('quantity', { valueAsNumber: true })}
-                            placeholder="20"
-                            className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                          <Controller
+                            name="quantity"
+                            control={control}
+                            render={({ field, fieldState }) => (
+                                <span className="p-input-icon-left w-full">
+                                    <Hash className="h-5 w-5 text-gray-400" />
+                                    <InputNumber
+                                        id={field.name}
+                                        ref={field.ref}
+                                        value={field.value}
+                                        onBlur={field.onBlur}
+                                        onValueChange={(e) => field.onChange(e.value)}
+                                        placeholder="20"
+                                        className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                                        inputClassName="w-full pl-10"
+                                    />
+                                </span>
+                            )}
                           />
                           {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity.message}</p>}
                         </div>
                       </div>
 
                       <div>
-                        <label htmlFor="image_url" className="block text-sm font-medium text-gray-700">
+                        <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 mb-1">
                           URL da Imagem
                         </label>
-                        <input
-                          type="url"
-                          {...register('image_url')}
-                          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
-                          placeholder="https://exemplo.com/imagem.jpg"
+                        <Controller
+                            name="image_url"
+                            control={control}
+                            render={({ field, fieldState }) => (
+                                <span className="p-input-icon-left w-full">
+                                    <LinkIcon className="h-5 w-5 text-gray-400" />
+                                    <InputText
+                                        id={field.name}
+                                        {...field}
+                                        value={field.value ?? ''}
+                                        className={`w-full pl-10 ${fieldState.error ? 'p-invalid' : ''}`}
+                                        placeholder="https://exemplo.com/imagem.jpg"
+                                    />
+                                </span>
+                            )}
                         />
                         {errors.image_url && <p className="mt-1 text-sm text-red-600">{errors.image_url.message}</p>}
                       </div>
@@ -425,6 +517,17 @@ export default function Products() {
           variant="danger"
           isLoading={isDeleting}
         />
+        
+        {/* --- BOTÃO DE AÇÃO FLUTUANTE (FAB) PARA MOBILE --- */}
+        <div className="lg:hidden fixed bottom-6 right-6 z-40">
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-gradient-to-r from-pink-500 to-violet-500 text-white rounded-full p-4 shadow-lg hover:scale-110 active:scale-100 transition-transform duration-200"
+            aria-label="Novo Produto"
+          >
+            <Plus className="w-6 h-6" />
+          </button>
+        </div>
       </div>
     </Layout>
   );
