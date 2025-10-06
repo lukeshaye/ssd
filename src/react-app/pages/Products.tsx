@@ -230,16 +230,20 @@ export default function Products() {
                     key={product.id}
                     className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
                   >
-                    {product.image_url && (
-                      <div className="h-48 w-full overflow-hidden">
+                    <div className="h-48 w-full overflow-hidden bg-gray-200">
+                      {product.image_url ? (
                         <img
                           src={product.image_url}
                           alt={product.name}
                           className="h-full w-full object-cover"
                           onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
                         />
-                      </div>
-                    )}
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Package className="w-16 h-16 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
 
                     <div className="px-6 py-4">
                       <div className="flex items-start justify-between mb-3">
@@ -292,14 +296,20 @@ export default function Products() {
               <div className="lg:hidden space-y-4">
                 {filteredProducts.map((product) => (
                   <div key={product.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                    {product.image_url && (
-                        <img 
-                            src={product.image_url} 
-                            alt={product.name} 
-                            className="h-32 w-full object-cover rounded-md mb-4"
-                            onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                    )}
+                    <div className="h-32 w-full overflow-hidden rounded-md mb-4 bg-gray-200">
+                        {product.image_url ? (
+                            <img 
+                                src={product.image_url} 
+                                alt={product.name} 
+                                className="h-full w-full object-cover"
+                                onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => { e.currentTarget.style.display = 'none'; }}
+                            />
+                        ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                                <Package className="w-12 h-12 text-gray-400" />
+                            </div>
+                        )}
+                    </div>
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-800 break-words">{product.name}</h3>
