@@ -142,28 +142,28 @@ export default function Clients() {
         <div className="mt-8">
           {filteredClients.length === 0 ? (
             <div className="text-center py-12">
-              <Users className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">
-                {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente'}
-              </h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm
-                  ? 'Tente ajustar os termos de busca.'
-                  : 'Comece adicionando o seu primeiro cliente.'
-                }
-              </p>
-              {!searchTerm && (
-                <div className="mt-6">
-                  <button
-                    type="button"
-                    onClick={handleNewClient}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Novo Cliente
-                  </button>
-                </div>
-              )}
+                <Users className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                    {searchTerm ? 'Nenhum cliente encontrado' : 'Nenhum cliente'}
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                    {searchTerm
+                    ? 'Tente ajustar os termos de busca.'
+                    : 'Comece adicionando o seu primeiro cliente.'
+                    }
+                </p>
+                {!searchTerm && (
+                    <div className="mt-6">
+                    <button
+                        type="button"
+                        onClick={handleNewClient}
+                        className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Novo Cliente
+                    </button>
+                    </div>
+                )}
             </div>
           ) : (
             <>
@@ -203,29 +203,30 @@ export default function Clients() {
                         )}
                       </div>
                     </div>
-                    {/* Botões de ação unificados no canto inferior direito */}
-                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                      >
-                        <Edit className="w-4 h-4 mr-1.5" />
-                        Editar
-                      </button>
+                    {/* ORDEM DOS BOTÕES ALTERADA */}
+                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3">
                       <button
                         onClick={() => handleDeleteClick(client)}
-                        className="inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                       >
                         <Trash2 className="w-4 h-4 mr-1.5" />
                         Excluir
+                      </button>
+                      <button
+                        onClick={() => handleEditClient(client)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" />
+                        Editar
                       </button>
                       {client.phone && (
                         <button
                           onClick={() => sendWhatsAppMessage(client)}
                           title="Enviar mensagem no WhatsApp"
-                          className="inline-flex items-center justify-center p-2 border border-transparent rounded-full text-green-600 bg-green-100 hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                         >
-                          <FaWhatsapp className="w-5 h-5" />
+                          <FaWhatsapp className="w-4 h-4 mr-1.5" />
+                          <span>Wpp</span>
                         </button>
                       )}
                     </div>
@@ -236,53 +237,50 @@ export default function Clients() {
               {/* --- VISÃO MOBILE (LISTA DE CARDS) --- */}
               <div className="lg:hidden space-y-4">
                 {filteredClients.map((client) => (
-                  <div key={client.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                  <div key={client.id} className="bg-white overflow-hidden p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
                     <div className="flex-grow">
-                      <div className="flex justify-between items-start gap-3">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-800 break-words">{client.name}</h3>
-                          {client.phone && (
-                            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                              <Phone className="w-3 h-3 flex-shrink-0"/> {client.phone}
-                            </p>
-                          )}
-                          {client.email && (
-                            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                              <Mail className="w-3 h-3 flex-shrink-0"/> {client.email}
-                            </p>
-                          )}
-                        </div>
-                        {client.phone && (
-                          <div className="flex-shrink-0">
-                            <button
-                              onClick={() => sendWhatsAppMessage(client)}
-                              title="Enviar mensagem no WhatsApp"
-                              className="inline-flex items-center justify-center p-2.5 border border-transparent rounded-full text-green-600 bg-green-100 hover:bg-green-200 focus:outline-none"
-                            >
-                              <FaWhatsapp className="w-5 h-5" />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <h3 className="font-semibold text-gray-800 break-words">{client.name}</h3>
+                      {client.phone && (
+                        <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                          <Phone className="w-3 h-3 flex-shrink-0"/> {client.phone}
+                        </p>
+                      )}
+                      {client.email && (
+                        <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                          <Mail className="w-3 h-3 flex-shrink-0"/> {client.email}
+                        </p>
+                      )}
                       {client.notes && (
                         <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100 italic">"{client.notes}"</p>
                       )}
                     </div>
-                    <div className="mt-4 flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <Edit className="w-4 h-4 mr-1.5" />
-                        Editar
-                      </button>
+                    
+                    {/* ORDEM DOS BOTÕES ALTERADA */}
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
                       <button
                         onClick={() => handleDeleteClick(client)}
-                        className="inline-flex items-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4 mr-1.5" />
                         Excluir
                       </button>
+                      <button
+                        onClick={() => handleEditClient(client)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <Edit className="w-4 h-4 mr-1.5" />
+                        Editar
+                      </button>
+                       {client.phone && (
+                        <button
+                          onClick={() => sendWhatsAppMessage(client)}
+                          title="Enviar mensagem no WhatsApp"
+                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
+                        >
+                          <FaWhatsapp className="w-4 h-4 mr-1.5" />
+                          <span>Wpp</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -310,7 +308,6 @@ export default function Clients() {
           isLoading={isDeleting}
         />
 
-        {/* --- BOTÃO DE AÇÃO FLUTUANTE (FAB) PARA MOBILE --- */}
         <div className="lg:hidden fixed bottom-6 right-6 z-40">
           <button
             onClick={handleNewClient}
