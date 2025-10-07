@@ -12,11 +12,10 @@ export const ClientSchema = z.object({
   phone: z.string().optional().nullable(),
   email: z.string().email({ message: "Email inválido" }).or(z.literal("")).optional().nullable(),
   notes: z.string().optional().nullable(),
-  // LINHA CORRIGIDA ABAIXO: Removido o .nullable() para impedir que datas inválidas (convertidas para null) passem na validação.
   birth_date: z.date({ invalid_type_error: "Data inválida." })
     .min(new Date("1900-01-01"), { message: "Data de nascimento improvável." })
     .max(new Date(), { message: "A data de nascimento não pode ser no futuro." })
-    .optional(), // Apenas .optional() é suficiente para permitir que o campo fique em branco.
+    .optional(),
   gender: z.enum(["masculino", "feminino", "outro"]).optional().nullable(),
 });
 export const CreateClientSchema = ClientSchema.omit({ id: true, user_id: true });
@@ -30,6 +29,8 @@ export const ProfessionalSchema = z.object({
   user_id: z.string(),
   name: z.string().min(1, "Nome do profissional é obrigatório"),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Formato de cor inválido. Use hexadecimal, ex: #RRGGBB").optional().nullable(),
+  salary: z.number().positive("O salário deve ser um número positivo").optional().nullable(),
+  commission_rate: z.number().min(0, "A comissão não pode ser negativa").max(1, "A comissão deve ser entre 0 e 1 (ex: 0.1 para 10%)").optional().nullable(),
 });
 export const CreateProfessionalSchema = ProfessionalSchema.omit({ id: true, user_id: true });
 
@@ -97,7 +98,7 @@ export const AppointmentFormSchema = z.object({
 
 
 // =================================================================
-// --- Schemas de Entradas Financeiras (COM A CORREÇÃO) ---
+// --- Schemas de Entradas Financeiras ---
 // =================================================================
 export const FinancialEntrySchema = z.object({
   id: z.number().optional(),
@@ -106,8 +107,7 @@ export const FinancialEntrySchema = z.object({
   amount: z.number().positive("O valor deve ser positivo"),
   type: z.enum(["receita", "despesa"]),
   entry_type: z.enum(["pontual", "fixa"]),
-  // LINHA CORRIGIDA ABAIXO:
-  entry_date: z.date({ required_error: "A data é obrigatória." }), // Alterado de z.string() para z.date()
+  entry_date: z.date({ required_error: "A data é obrigatória." }),
   appointment_id: z.number().optional().nullable(),
   is_virtual: z.boolean().default(false),
 });

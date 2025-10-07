@@ -13,9 +13,10 @@ const DashboardPage = lazy(() => import("./pages/Dashboard"));
 const AppointmentsPage = lazy(() => import("./pages/Appointments"));
 const FinancialPage = lazy(() => import("./pages/Financial"));
 const ProductsPage = lazy(() => import("./pages/Products"));
-const ServicesPage = lazy(() => import("./pages/Services")); // <-- NOVA PÁGINA
+const ServicesPage = lazy(() => import("./pages/Services"));
 const ClientsPage = lazy(() => import("./pages/Clients"));
 const ProfessionalsPage = lazy(() => import("./pages/Professionals"));
+const ProfessionalDetailPage = lazy(() => import("./pages/ProfessionalDetail")); // <-- NOVA PÁGINA DE DETALHES
 const SettingsPage = lazy(() => import("./pages/Settings"));
 
 function AppRoutes() {
@@ -61,7 +62,6 @@ function AppRoutes() {
               </Suspense>
             </ProtectedRoute>
           } />
-          {/* NOVA ROTA PARA SERVIÇOS */}
           <Route path="/services" element={
             <ProtectedRoute>
               <Suspense fallback={<LoadingSpinner />}>
@@ -80,6 +80,14 @@ function AppRoutes() {
             <ProtectedRoute>
               <Suspense fallback={<LoadingSpinner />}>
                 <ProfessionalsPage />
+              </Suspense>
+            </ProtectedRoute>
+          } />
+          {/* NOVA ROTA PARA DETALHES DO PROFISSIONAL */}
+          <Route path="/professionals/:id" element={
+            <ProtectedRoute>
+              <Suspense fallback={<LoadingSpinner />}>
+                <ProfessionalDetailPage />
               </Suspense>
             </ProtectedRoute>
           } />

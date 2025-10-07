@@ -14,18 +14,18 @@ import {
 // Importar os schemas de validação compartilhados
 import {
   CreateClientSchema,
-  CreateAppointmentSchema,
+  AppointmentFormSchema as CreateAppointmentSchema, // Renomeado para consistência
   CreateFinancialEntrySchema,
   CreateProductSchema,
-  CreateProfessionalSchema
+  CreateProfessionalSchema,
+  ServiceSchema as CreateServiceSchema,
 } from '../shared/types';
 
 // --- Schemas de Validação Locais ---
-// Criar schemas para rotas que não os tinham definidos no `shared/types.ts`
 const BusinessSettingsSchema = z.object({
   day_of_week: z.number().min(0).max(6),
-  start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // Formato HH:MM
-  end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/), // Formato HH:MM
+  start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable(), // Formato HH:MM
+  end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable(), // Formato HH:MM
 });
 
 const BusinessExceptionSchema = z.object({
@@ -33,6 +33,11 @@ const BusinessExceptionSchema = z.object({
   start_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
   end_time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).nullable().optional(),
   description: z.string().min(1, "Descrição é obrigatória"),
+});
+
+const AbsenceSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    reason: z.string().optional().nullable(),
 });
 
 
@@ -44,7 +49,7 @@ app.use("*", cors({
   credentials: true,
 }));
 
-// --- Rotas de Autenticação (Sem alterações) ---
+// --- Rotas de Autenticação ---
 app.get('/api/oauth/google/redirect_url', async (c) => {
   const redirectUrl = await getOAuthRedirectUrl('google', {
     apiUrl: c.env.MOCHA_USERS_SERVICE_API_URL,
@@ -87,14 +92,14 @@ app.get('/api/logout', async (c) => {
 });
 
 
-// --- Rotas do Dashboard (GET, sem necessidade de validação de entrada) ---
+// --- Rotas do Dashboard ---
 app.get("/api/dashboard/kpis", authMiddleware, async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
   const today = new Date().toISOString().split('T')[0];
   const dailyEarnings = await c.env.DB.prepare(`SELECT COALESCE(SUM(amount), 0) as total FROM financial_entries WHERE user_id = ? AND type = 'receita' AND entry_date = ?`).bind(user.id, today).first();
   const dailyAppointments = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE user_id = ? AND DATE(appointment_date) = ?`).bind(user.id, today).first();
-  const avgTicket = await c.env.DB.prepare(`SELECT COALESCE(AVG(price), 0) as avg FROM appointments WHERE user_id = ? AND DATE(appointment_date) = ?`).bind(user.id, today).first();
+  const avgTicket = await c.env.DB.prepare(`SELECT COALESCE(AVG(price), 0) as avg FROM appointments WHERE user_id = ? AND DATE(appointment_date) = ? AND attended = 1`).bind(user.id, today).first();
   return c.json({ dailyEarnings: dailyEarnings?.total || 0, dailyAppointments: dailyAppointments?.count || 0, avgTicket: avgTicket?.avg || 0 });
 });
 
@@ -102,14 +107,12 @@ app.get("/api/dashboard/today-appointments", authMiddleware, async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
   const today = new Date().toISOString().split('T')[0];
-  const appointments = await c.env.DB.prepare(`SELECT id, client_name, service, price, professional, appointment_date, is_confirmed FROM appointments WHERE user_id = ? AND DATE(appointment_date) = ? ORDER BY appointment_date ASC`).bind(user.id, today).all();
+  const appointments = await c.env.DB.prepare(`SELECT * FROM appointments WHERE user_id = ? AND DATE(appointment_date) = ? ORDER BY appointment_date ASC`).bind(user.id, today).all();
   return c.json(appointments.results);
 });
 
-// Outras rotas GET do dashboard... (sem alterações)
 
-
-// --- Rotas de Clientes (com validação) ---
+// --- Rotas de Clientes ---
 app.get("/api/clients", authMiddleware, async (c) => {
   const user = c.get("user");
   if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -117,42 +120,29 @@ app.get("/api/clients", authMiddleware, async (c) => {
   return c.json(clients.results);
 });
 
-app.post(
-  "/api/clients",
-  authMiddleware,
-  zValidator('json', CreateClientSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.post("/api/clients", authMiddleware, zValidator('json', CreateClientSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
-    
-    const validatedData = c.req.valid('json'); // CORREÇÃO: Usar dados validados
-    
+    const validatedData = c.req.valid('json');
     const result = await c.env.DB.prepare(`
-      INSERT INTO clients (user_id, name, phone, email, notes)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(user.id, validatedData.name, validatedData.phone || null, validatedData.email || null, validatedData.notes || null).run();
-    return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+      INSERT INTO clients (user_id, name, phone, email, notes, birth_date, gender)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(user.id, validatedData.name, validatedData.phone || null, validatedData.email || null, validatedData.notes || null, validatedData.birth_date ? new Date(validatedData.birth_date).toISOString().split('T')[0] : null, validatedData.gender || null).run();
+    const newClient = await c.env.DB.prepare(`SELECT * FROM clients WHERE id = ?`).bind(result.meta.last_row_id).first();
+    return c.json(newClient, 201);
+});
 
-app.put(
-  "/api/clients/:id",
-  authMiddleware,
-  zValidator('json', CreateClientSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.put("/api/clients/:id", authMiddleware, zValidator('json', CreateClientSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
-    
     const clientId = c.req.param('id');
-    const validatedData = c.req.valid('json'); // CORREÇÃO: Usar dados validados
-    
+    const validatedData = c.req.valid('json');
     await c.env.DB.prepare(`
-      UPDATE clients SET name = ?, phone = ?, email = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE clients SET name = ?, phone = ?, email = ?, notes = ?, birth_date = ?, gender = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
-    `).bind(validatedData.name, validatedData.phone || null, validatedData.email || null, validatedData.notes || null, clientId, user.id).run();
+    `).bind(validatedData.name, validatedData.phone || null, validatedData.email || null, validatedData.notes || null, validatedData.birth_date ? new Date(validatedData.birth_date).toISOString().split('T')[0] : null, validatedData.gender || null, clientId, user.id).run();
     return c.json({ success: true });
-  }
-);
+});
 
 app.delete("/api/clients/:id", authMiddleware, async (c) => {
     const user = c.get("user");
@@ -163,7 +153,7 @@ app.delete("/api/clients/:id", authMiddleware, async (c) => {
 });
 
 
-// --- Rotas Financeiras (com validação) ---
+// --- Rotas Financeiras ---
 app.get("/api/financial/entries", authMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -171,27 +161,18 @@ app.get("/api/financial/entries", authMiddleware, async (c) => {
     return c.json(entries.results);
 });
 
-app.post(
-  "/api/financial/entries",
-  authMiddleware,
-  zValidator('json', CreateFinancialEntrySchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.post("/api/financial/entries", authMiddleware, zValidator('json', CreateFinancialEntrySchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
     const result = await c.env.DB.prepare(`
       INSERT INTO financial_entries (user_id, description, amount, type, entry_type, entry_date)
       VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(user.id, validatedData.description, validatedData.amount, validatedData.type, validatedData.entry_type, validatedData.entry_date).run();
+    `).bind(user.id, validatedData.description, validatedData.amount, validatedData.type, validatedData.entry_type, new Date(validatedData.entry_date).toISOString().split('T')[0]).run();
     return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+});
 
-app.put(
-  "/api/financial/entries/:id",
-  authMiddleware,
-  zValidator('json', CreateFinancialEntrySchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.put("/api/financial/entries/:id", authMiddleware, zValidator('json', CreateFinancialEntrySchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const entryId = c.req.param('id');
@@ -199,10 +180,9 @@ app.put(
     await c.env.DB.prepare(`
       UPDATE financial_entries SET description = ?, amount = ?, type = ?, entry_type = ?, entry_date = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
-    `).bind(validatedData.description, validatedData.amount, validatedData.type, validatedData.entry_type, validatedData.entry_date, entryId, user.id).run();
+    `).bind(validatedData.description, validatedData.amount, validatedData.type, validatedData.entry_type, new Date(validatedData.entry_date).toISOString().split('T')[0], entryId, user.id).run();
     return c.json({ success: true });
-  }
-);
+});
 
 app.delete("/api/financial/entries/:id", authMiddleware, async (c) => {
     const user = c.get("user");
@@ -213,7 +193,7 @@ app.delete("/api/financial/entries/:id", authMiddleware, async (c) => {
 });
 
 
-// --- Rotas de Produtos (com validação) ---
+// --- Rotas de Produtos ---
 app.get("/api/products", authMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -221,11 +201,7 @@ app.get("/api/products", authMiddleware, async (c) => {
     return c.json(products.results);
 });
 
-app.post(
-  "/api/products",
-  authMiddleware,
-  zValidator('json', CreateProductSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.post("/api/products", authMiddleware, zValidator('json', CreateProductSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
@@ -234,14 +210,9 @@ app.post(
       VALUES (?, ?, ?, ?, ?, ?)
     `).bind(user.id, validatedData.name, validatedData.description || null, validatedData.price, validatedData.quantity || 0, validatedData.image_url || null).run();
     return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+});
 
-app.put(
-  "/api/products/:id",
-  authMiddleware,
-  zValidator('json', CreateProductSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.put("/api/products/:id", authMiddleware, zValidator('json', CreateProductSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const productId = c.req.param('id');
@@ -251,8 +222,7 @@ app.put(
       WHERE id = ? AND user_id = ?
     `).bind(validatedData.name, validatedData.description || null, validatedData.price, validatedData.quantity || 0, validatedData.image_url || null, productId, user.id).run();
     return c.json({ success: true });
-  }
-);
+});
 
 app.delete("/api/products/:id", authMiddleware, async (c) => {
     const user = c.get("user");
@@ -263,7 +233,7 @@ app.delete("/api/products/:id", authMiddleware, async (c) => {
 });
 
 
-// --- Rotas de Profissionais (NOVO) ---
+// --- Rotas de Profissionais ---
 app.get("/api/professionals", authMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -271,38 +241,28 @@ app.get("/api/professionals", authMiddleware, async (c) => {
     return c.json(professionals.results);
 });
 
-app.post(
-  "/api/professionals",
-  authMiddleware,
-  zValidator('json', CreateProfessionalSchema),
-  async (c) => {
+app.post("/api/professionals", authMiddleware, zValidator('json', CreateProfessionalSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
     const result = await c.env.DB.prepare(`
-      INSERT INTO professionals (user_id, name)
-      VALUES (?, ?)
-    `).bind(user.id, validatedData.name).run();
+      INSERT INTO professionals (user_id, name, color, salary, commission_rate)
+      VALUES (?, ?, ?, ?, ?)
+    `).bind(user.id, validatedData.name, validatedData.color, validatedData.salary, validatedData.commission_rate).run();
     return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+});
 
-app.put(
-  "/api/professionals/:id",
-  authMiddleware,
-  zValidator('json', CreateProfessionalSchema),
-  async (c) => {
+app.put("/api/professionals/:id", authMiddleware, zValidator('json', CreateProfessionalSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const professionalId = c.req.param('id');
     const validatedData = c.req.valid('json');
     await c.env.DB.prepare(`
-      UPDATE professionals SET name = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE professionals SET name = ?, color = ?, salary = ?, commission_rate = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
-    `).bind(validatedData.name, professionalId, user.id).run();
+    `).bind(validatedData.name, validatedData.color, validatedData.salary, validatedData.commission_rate, professionalId, user.id).run();
     return c.json({ success: true });
-  }
-);
+});
 
 app.delete("/api/professionals/:id", authMiddleware, async (c) => {
     const user = c.get("user");
@@ -312,30 +272,80 @@ app.delete("/api/professionals/:id", authMiddleware, async (c) => {
     return c.json({ success: true });
 });
 
+// --- Novas Rotas para Profissionais (do plano) ---
 
-// --- Rotas de Configurações (com validação) ---
-app.post(
-  "/api/settings/business",
-  authMiddleware,
-  zValidator('json', BusinessSettingsSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+// Retorna as estatísticas de um profissional
+app.get("/api/professionals/:id/stats", authMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const professionalId = c.req.param('id');
+
+  const totalServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ?`).bind(professionalId, user.id).first();
+  const monthlyServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ? AND strftime('%Y-%m', appointment_date) = strftime('%Y-%m', 'now')`).bind(professionalId, user.id).first();
+  const weeklyServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ? AND strftime('%W', appointment_date) = strftime('%W', 'now')`).bind(professionalId, user.id).first();
+  const topService = await c.env.DB.prepare(`SELECT service, COUNT(service) as count FROM appointments WHERE professional_id = ? AND user_id = ? GROUP BY service ORDER BY count DESC LIMIT 1`).bind(professionalId, user.id).first();
+  const topClient = await c.env.DB.prepare(`SELECT client_name, COUNT(client_name) as count FROM appointments WHERE professional_id = ? AND user_id = ? GROUP BY client_name ORDER BY count DESC LIMIT 1`).bind(professionalId, user.id).first();
+
+  return c.json({
+    totalServices: totalServices?.count || 0,
+    monthlyServices: monthlyServices?.count || 0,
+    weeklyServices: weeklyServices?.count || 0,
+    topService: topService || { service: 'N/A', count: 0 },
+    topClient: topClient || { client_name: 'N/A', count: 0 },
+  });
+});
+
+// Retorna o histórico de faltas de um profissional
+app.get("/api/professionals/:id/absences", authMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const professionalId = c.req.param('id');
+  const absences = await c.env.DB.prepare(`SELECT * FROM professional_absences WHERE professional_id = ? AND user_id = ? ORDER BY date DESC`).bind(professionalId, user.id).all();
+  return c.json(absences.results);
+});
+
+// Adiciona uma nova falta para um profissional
+app.post("/api/professionals/:id/absences", authMiddleware, zValidator('json', AbsenceSchema), async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const professionalId = c.req.param('id');
+  const { date, reason } = c.req.valid('json');
+
+  const result = await c.env.DB.prepare(`INSERT INTO professional_absences (professional_id, date, reason, user_id) VALUES (?, ?, ?, ?)`).bind(professionalId, date, reason, user.id).run();
+  return c.json({ id: result.meta.last_row_id }, 201);
+});
+
+// Remove uma falta
+app.delete("/api/professionals/absences/:absence_id", authMiddleware, async (c) => {
+  const user = c.get("user");
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+  const absenceId = c.req.param('absence_id');
+  await c.env.DB.prepare(`DELETE FROM professional_absences WHERE id = ? AND user_id = ?`).bind(absenceId, user.id).run();
+  return c.json({ success: true });
+});
+
+
+// --- Rotas de Configurações ---
+app.post("/api/settings/business", authMiddleware, zValidator('json', z.array(BusinessSettingsSchema)), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
-    await c.env.DB.prepare(`DELETE FROM business_settings WHERE user_id = ? AND day_of_week = ?`).bind(user.id, validatedData.day_of_week).run();
-    const result = await c.env.DB.prepare(`
+
+    const stmt = c.env.DB.prepare(`
       INSERT INTO business_settings (user_id, day_of_week, start_time, end_time)
       VALUES (?, ?, ?, ?)
-    `).bind(user.id, validatedData.day_of_week, validatedData.start_time, validatedData.end_time).run();
-    return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+      ON CONFLICT(user_id, day_of_week) DO UPDATE SET
+      start_time = excluded.start_time,
+      end_time = excluded.end_time;
+    `);
 
-app.post(
-  "/api/settings/exceptions",
-  authMiddleware,
-  zValidator('json', BusinessExceptionSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+    const batch = validatedData.map(day => stmt.bind(user.id, day.day_of_week, day.start_time, day.end_time));
+    await c.env.DB.batch(batch);
+
+    return c.json({ success: true }, 201);
+});
+
+app.post("/api/settings/exceptions", authMiddleware, zValidator('json', BusinessExceptionSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
@@ -344,11 +354,10 @@ app.post(
       VALUES (?, ?, ?, ?, ?)
     `).bind(user.id, validatedData.exception_date, validatedData.start_time || null, validatedData.end_time || null, validatedData.description).run();
     return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+});
 
 
-// --- Rotas de Agendamentos (com validação) ---
+// --- Rotas de Agendamentos ---
 app.get("/api/appointments", authMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -356,38 +365,47 @@ app.get("/api/appointments", authMiddleware, async (c) => {
     return c.json(appointments.results);
 });
 
-app.post(
-  "/api/appointments",
-  authMiddleware,
-  zValidator('json', CreateAppointmentSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+app.post("/api/appointments", authMiddleware, zValidator('json', CreateAppointmentSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const validatedData = c.req.valid('json');
-    const result = await c.env.DB.prepare(`
-      INSERT INTO appointments (user_id, client_name, service, price, professional, appointment_date, is_confirmed)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(user.id, validatedData.client_name, validatedData.service, validatedData.price, validatedData.professional, validatedData.appointment_date, validatedData.is_confirmed || false).run();
-    return c.json({ id: result.meta.last_row_id }, 201);
-  }
-);
+    
+    // Pegar nomes de relacionamentos
+    const client = await c.env.DB.prepare(`SELECT name FROM clients WHERE id = ? AND user_id = ?`).bind(validatedData.client_id, user.id).first();
+    const professional = await c.env.DB.prepare(`SELECT name FROM professionals WHERE id = ? AND user_id = ?`).bind(validatedData.professional_id, user.id).first();
+    const service = await c.env.DB.prepare(`SELECT name FROM services WHERE id = ? AND user_id = ?`).bind(validatedData.service_id, user.id).first();
 
-app.put(
-  "/api/appointments/:id",
-  authMiddleware,
-  zValidator('json', CreateAppointmentSchema), // CORREÇÃO: Adicionado middleware de validação
-  async (c) => {
+    if (!client || !professional || !service) {
+      return c.json({ error: "Invalid data provided" }, 400);
+    }
+    
+    const result = await c.env.DB.prepare(`
+      INSERT INTO appointments (user_id, client_id, professional_id, service_id, client_name, service, professional, price, appointment_date, end_date, attended)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(user.id, validatedData.client_id, validatedData.professional_id, validatedData.service_id, client.name, service.name, professional.name, validatedData.price, validatedData.appointment_date, validatedData.end_date, validatedData.attended || false).run();
+    return c.json({ id: result.meta.last_row_id }, 201);
+});
+
+app.put("/api/appointments/:id", authMiddleware, zValidator('json', CreateAppointmentSchema), async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
     const appointmentId = c.req.param('id');
     const validatedData = c.req.valid('json');
+
+    const client = await c.env.DB.prepare(`SELECT name FROM clients WHERE id = ? AND user_id = ?`).bind(validatedData.client_id, user.id).first();
+    const professional = await c.env.DB.prepare(`SELECT name FROM professionals WHERE id = ? AND user_id = ?`).bind(validatedData.professional_id, user.id).first();
+    const service = await c.env.DB.prepare(`SELECT name FROM services WHERE id = ? AND user_id = ?`).bind(validatedData.service_id, user.id).first();
+
+    if (!client || !professional || !service) {
+      return c.json({ error: "Invalid data provided" }, 400);
+    }
+
     await c.env.DB.prepare(`
-      UPDATE appointments SET client_name = ?, service = ?, price = ?, professional = ?, appointment_date = ?, is_confirmed = ?, updated_at = CURRENT_TIMESTAMP
+      UPDATE appointments SET client_id = ?, professional_id = ?, service_id = ?, client_name = ?, service = ?, professional = ?, price = ?, appointment_date = ?, end_date = ?, attended = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
-    `).bind(validatedData.client_name, validatedData.service, validatedData.price, validatedData.professional, validatedData.appointment_date, validatedData.is_confirmed || false, appointmentId, user.id).run();
+    `).bind(validatedData.client_id, validatedData.professional_id, validatedData.service_id, client.name, service.name, professional.name, validatedData.price, validatedData.appointment_date, validatedData.end_date, validatedData.attended || false, appointmentId, user.id).run();
     return c.json({ success: true });
-  }
-);
+});
 
 app.delete("/api/appointments/:id", authMiddleware, async (c) => {
     const user = c.get("user");
