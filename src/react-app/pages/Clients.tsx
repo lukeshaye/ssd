@@ -175,13 +175,24 @@ export default function Clients() {
                     className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col"
                   >
                     <div className="px-6 py-4 flex-grow">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="bg-blue-100 rounded-full p-2">
-                          <Users className="h-5 w-5 text-blue-600" />
-                        </div>
-                        <div>
+                      {/* A CORREÇÃO ESTÁ AQUI: items-start -> items-center */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="bg-blue-100 rounded-full p-2">
+                            <Users className="h-5 w-5 text-blue-600" />
+                          </div>
                           <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
                         </div>
+                        {client.phone && (
+                            <button
+                                onClick={() => sendWhatsAppMessage(client)}
+                                title="Enviar mensagem no WhatsApp"
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
+                            >
+                                <FaWhatsapp className="w-4 h-4" />
+                                <span>Wpp</span>
+                            </button>
+                        )}
                       </div>
                       <div className="space-y-2">
                         {client.phone && (
@@ -203,15 +214,7 @@ export default function Clients() {
                         )}
                       </div>
                     </div>
-                    {/* ORDEM DOS BOTÕES ALTERADA */}
                     <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3">
-                      <button
-                        onClick={() => handleDeleteClick(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1.5" />
-                        Excluir
-                      </button>
                       <button
                         onClick={() => handleEditClient(client)}
                         className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
@@ -219,16 +222,13 @@ export default function Clients() {
                         <Edit className="w-4 h-4 mr-1.5" />
                         Editar
                       </button>
-                      {client.phone && (
-                        <button
-                          onClick={() => sendWhatsAppMessage(client)}
-                          title="Enviar mensagem no WhatsApp"
-                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <FaWhatsapp className="w-4 h-4 mr-1.5" />
-                          <span>Wpp</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDeleteClick(client)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1.5" />
+                        Excluir
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -239,9 +239,21 @@ export default function Clients() {
                 {filteredClients.map((client) => (
                   <div key={client.id} className="bg-white overflow-hidden p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
                     <div className="flex-grow">
-                      <h3 className="font-semibold text-gray-800 break-words">{client.name}</h3>
+                      <div className="flex justify-between items-start">
+                          <h3 className="font-semibold text-gray-800 break-words pr-2">{client.name}</h3>
+                          {client.phone && (
+                              <button
+                                  onClick={() => sendWhatsAppMessage(client)}
+                                  title="Enviar mensagem no WhatsApp"
+                                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
+                              >
+                                  <FaWhatsapp className="w-4 h-4" />
+                                  <span>Wpp</span>
+                              </button>
+                          )}
+                      </div>
                       {client.phone && (
-                        <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                        <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
                           <Phone className="w-3 h-3 flex-shrink-0"/> {client.phone}
                         </p>
                       )}
@@ -255,15 +267,7 @@ export default function Clients() {
                       )}
                     </div>
                     
-                    {/* ORDEM DOS BOTÕES ALTERADA */}
                     <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeleteClick(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1.5" />
-                        Excluir
-                      </button>
                       <button
                         onClick={() => handleEditClient(client)}
                         className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
@@ -271,16 +275,13 @@ export default function Clients() {
                         <Edit className="w-4 h-4 mr-1.5" />
                         Editar
                       </button>
-                       {client.phone && (
-                        <button
-                          onClick={() => sendWhatsAppMessage(client)}
-                          title="Enviar mensagem no WhatsApp"
-                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50"
-                        >
-                          <FaWhatsapp className="w-4 h-4 mr-1.5" />
-                          <span>Wpp</span>
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDeleteClick(client)}
+                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 mr-1.5" />
+                        Excluir
+                      </button>
                     </div>
                   </div>
                 ))}
