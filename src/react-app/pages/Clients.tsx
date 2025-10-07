@@ -7,10 +7,11 @@ import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { Users, Plus, Edit, Trash2, Phone, Mail, Search } from 'lucide-react';
+import { Users, Plus, Edit, Trash2, Phone, Mail, Search, Cake, UserSquare } from 'lucide-react'; // Ícones adicionados
 import { FaWhatsapp } from 'react-icons/fa';
 import type { ClientType } from '../../shared/types';
 import ClientFormModal from '../components/ClientFormModal';
+import { differenceInYears } from 'date-fns'; // Import para calcular a idade
 
 /**
  * Página para gerir os clientes (Criar, Ler, Atualizar, Apagar).
@@ -100,6 +101,11 @@ export default function Clients() {
     window.open(whatsappUrl, '_blank');
   };
 
+  const calculateAge = (birthDate: string | null | undefined) => {
+    if (!birthDate) return null;
+    return differenceInYears(new Date(), new Date(birthDate));
+  };
+
   if (loading.clients) {
     return <Layout><LoadingSpinner /></Layout>;
   }
@@ -169,122 +175,149 @@ export default function Clients() {
             <>
               {/* --- VISÃO DESKTOP (GRID) --- */}
               <div className="hidden lg:grid gap-6 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
-                {filteredClients.map((client) => (
-                  <div
-                    key={client.id}
-                    className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col"
-                  >
-                    <div className="px-6 py-4 flex-grow">
-                      {/* A CORREÇÃO ESTÁ AQUI: items-start -> items-center */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="bg-blue-100 rounded-full p-2">
-                            <Users className="h-5 w-5 text-blue-600" />
+                {filteredClients.map((client) => {
+                  const age = calculateAge(client.birth_date);
+                  return (
+                    <div
+                      key={client.id}
+                      className="bg-white overflow-hidden shadow-sm rounded-lg border border-gray-200 hover:shadow-md transition-shadow flex flex-col"
+                    >
+                      <div className="px-6 py-4 flex-grow">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="bg-blue-100 rounded-full p-2">
+                              <Users className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
                           </div>
-                          <h3 className="text-lg font-semibold text-gray-900">{client.name}</h3>
-                        </div>
-                        {client.phone && (
-                            <button
-                                onClick={() => sendWhatsAppMessage(client)}
-                                title="Enviar mensagem no WhatsApp"
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
-                            >
-                                <FaWhatsapp className="w-4 h-4" />
-                                <span>Wpp</span>
-                            </button>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        {client.phone && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Phone className="w-4 h-4 mr-2" />
-                            {client.phone}
-                          </div>
-                        )}
-                        {client.email && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <Mail className="w-4 h-4 mr-2" />
-                            {client.email}
-                          </div>
-                        )}
-                        {client.notes && (
-                          <div className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">
-                            <p className="italic">"{client.notes}"</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-                      >
-                        <Edit className="w-4 h-4 mr-1.5" />
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1.5" />
-                        Excluir
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* --- VISÃO MOBILE (LISTA DE CARDS) --- */}
-              <div className="lg:hidden space-y-4">
-                {filteredClients.map((client) => (
-                  <div key={client.id} className="bg-white overflow-hidden p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
-                    <div className="flex-grow">
-                      <div className="flex justify-between items-start">
-                          <h3 className="font-semibold text-gray-800 break-words pr-2">{client.name}</h3>
                           {client.phone && (
                               <button
                                   onClick={() => sendWhatsAppMessage(client)}
                                   title="Enviar mensagem no WhatsApp"
-                                  className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
                               >
                                   <FaWhatsapp className="w-4 h-4" />
                                   <span>Wpp</span>
                               </button>
                           )}
+                        </div>
+                        <div className="space-y-2">
+                          {client.phone && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Phone className="w-4 h-4 mr-2" />
+                              {client.phone}
+                            </div>
+                          )}
+                          {client.email && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Mail className="w-4 h-4 mr-2" />
+                              {client.email}
+                            </div>
+                          )}
+                          {age !== null && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Cake className="w-4 h-4 mr-2" />
+                              {age} anos
+                            </div>
+                          )}
+                          {client.gender && (
+                            <div className="flex items-center text-sm text-gray-600 capitalize">
+                              <UserSquare className="w-4 h-4 mr-2" />
+                              {client.gender}
+                            </div>
+                          )}
+                          {client.notes && (
+                            <div className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                              <p className="italic">"{client.notes}"</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      {client.phone && (
-                        <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
-                          <Phone className="w-3 h-3 flex-shrink-0"/> {client.phone}
-                        </p>
-                      )}
-                      {client.email && (
-                        <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
-                          <Mail className="w-3 h-3 flex-shrink-0"/> {client.email}
-                        </p>
-                      )}
-                      {client.notes && (
-                        <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100 italic">"{client.notes}"</p>
-                      )}
+                      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center gap-3">
+                        <button
+                          onClick={() => handleEditClient(client)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+                        >
+                          <Edit className="w-4 h-4 mr-1.5" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(client)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 border border-red-300 shadow-sm text-sm font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1.5" />
+                          Excluir
+                        </button>
+                      </div>
                     </div>
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
-                      <button
-                        onClick={() => handleEditClient(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                      >
-                        <Edit className="w-4 h-4 mr-1.5" />
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(client)}
-                        className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1.5" />
-                        Excluir
-                      </button>
+                  );
+                })}
+              </div>
+
+              {/* --- VISÃO MOBILE (LISTA DE CARDS) --- */}
+              <div className="lg:hidden space-y-4">
+                {filteredClients.map((client) => {
+                  const age = calculateAge(client.birth_date);
+                  return (
+                    <div key={client.id} className="bg-white overflow-hidden p-4 rounded-lg shadow-sm border border-gray-200 flex flex-col">
+                      <div className="flex-grow">
+                        <div className="flex justify-between items-start">
+                            <h3 className="font-semibold text-gray-800 break-words pr-2">{client.name}</h3>
+                            {client.phone && (
+                                <button
+                                    onClick={() => sendWhatsAppMessage(client)}
+                                    title="Enviar mensagem no WhatsApp"
+                                    className="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 border border-green-300 text-xs font-medium rounded-md text-green-700 bg-white hover:bg-green-50 transition-colors"
+                                >
+                                    <FaWhatsapp className="w-4 h-4" />
+                                    <span>Wpp</span>
+                                </button>
+                            )}
+                        </div>
+                        {client.phone && (
+                          <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
+                            <Phone className="w-3 h-3 flex-shrink-0"/> {client.phone}
+                          </p>
+                        )}
+                        {client.email && (
+                          <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                            <Mail className="w-3 h-3 flex-shrink-0"/> {client.email}
+                          </p>
+                        )}
+                        {age !== null && (
+                          <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                            <Cake className="w-3 h-3 flex-shrink-0"/> {age} anos
+                          </p>
+                        )}
+                        {client.gender && (
+                          <p className="text-sm text-gray-500 mt-1 flex items-center gap-2 capitalize">
+                            <UserSquare className="w-3 h-3 flex-shrink-0"/> {client.gender}
+                          </p>
+                        )}
+                        {client.notes && (
+                          <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100 italic">"{client.notes}"</p>
+                        )}
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2">
+                        <button
+                          onClick={() => handleEditClient(client)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          <Edit className="w-4 h-4 mr-1.5" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(client)}
+                          className="flex-1 inline-flex items-center justify-center px-3 py-1.5 border border-red-300 text-xs font-medium rounded-md text-red-700 bg-white hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1.5" />
+                          Excluir
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}

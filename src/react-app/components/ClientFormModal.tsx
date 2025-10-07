@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
 import { useToastHelpers } from '../contexts/ToastContext';
-import { X, User, Mail, Phone } from 'lucide-react'; // Ícone de notas removido
+import { X, User, Mail, Phone } from 'lucide-react';
 import type { ClientType } from '../../shared/types';
 import { CreateClientSchema } from '../../shared/types';
 
@@ -14,6 +14,8 @@ import { CreateClientSchema } from '../../shared/types';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputMask } from 'primereact/inputmask';
+import { Calendar, CalendarChangeParams } from 'primereact/calendar'; // Importação do tipo de evento
+import { Dropdown } from 'primereact/dropdown';
 
 // --- Definição de Tipos ---
 interface ClientFormData {
@@ -21,6 +23,8 @@ interface ClientFormData {
   phone?: string;
   email?: string;
   notes?: string;
+  birth_date?: Date | null;
+  gender?: 'masculino' | 'feminino' | 'outro' | null;
 }
 
 interface ClientFormModalProps {
@@ -35,7 +39,15 @@ const defaultFormValues: ClientFormData = {
     phone: '',
     email: '',
     notes: '',
+    birth_date: null,
+    gender: null,
 };
+
+const genderOptions = [
+    { label: 'Masculino', value: 'masculino' },
+    { label: 'Feminino', value: 'feminino' },
+    { label: 'Outro', value: 'outro' },
+];
 
 export default function ClientFormModal({ isOpen, onClose, onClientCreated, editingClient }: ClientFormModalProps) {
   const { user } = useSupabaseAuth();
@@ -49,8 +61,15 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
     resolver: zodResolver(CreateClientSchema),
-    defaultValues: editingClient 
-      ? { name: editingClient.name, phone: editingClient.phone || '', email: editingClient.email || '', notes: editingClient.notes || '' } 
+    defaultValues: editingClient
+      ? {
+          name: editingClient.name,
+          phone: editingClient.phone || '',
+          email: editingClient.email || '',
+          notes: editingClient.notes || '',
+          birth_date: editingClient.birth_date ? new Date(editingClient.birth_date) : null,
+          gender: editingClient.gender,
+        }
       : defaultFormValues
   });
 
@@ -80,6 +99,8 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
             phone: editingClient.phone || '',
             email: editingClient.email || '',
             notes: editingClient.notes || '',
+            birth_date: editingClient.birth_date ? new Date(editingClient.birth_date) : null,
+            gender: editingClient.gender,
         });
     }
   }, [isOpen, editingClient, reset]);
@@ -168,8 +189,57 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                   />
                   {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                 </div>
+
+                {/* Campos: Data de Nascimento e Gênero */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700 mb-1">Data de Nascimento</label>
+                    <Controller
+                      name="birth_date"
+                      control={control}
+                      render={({ field, fieldState }) => (
+                        <Calendar 
+                          id={field.name} 
+                          value={field.value} 
+                          // MODIFICAÇÃO: Lógica para forçar erro em datas inválidas digitadas
+                          onChange={(e: CalendarChangeParams) => {
+                            if (e.target.value && e.value === null) {
+                              field.onChange(new Date('invalid'));
+                            } else {
+                              field.onChange(e.value);
+                            }
+                          }} 
+                          dateFormat="dd/mm/yy"
+                          placeholder="DD/MM/AAAA"
+                          mask="99/99/9999"
+                          showOnFocus={false}
+                          className={`w-full p-inputtext ${fieldState.error ? 'p-invalid' : ''}`}
+                        />
+                      )}
+                    />
+                    {errors.birth_date && <p className="mt-1 text-sm text-red-600">{errors.birth_date.message}</p>}
+                  </div>
+                  <div>
+                    <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">Gênero</label>
+                    <Controller
+                        name="gender"
+                        control={control}
+                        render={({ field, fieldState }) => (
+                            <Dropdown 
+                              id={field.name}
+                              value={field.value} 
+                              options={genderOptions} 
+                              onChange={(e) => field.onChange(e.value)} 
+                              placeholder="Selecione"
+                              className={`w-full ${fieldState.error ? 'p-invalid' : ''}`}
+                            />
+                        )}
+                    />
+                    {errors.gender && <p className="mt-1 text-sm text-red-600">{errors.gender.message}</p>}
+                  </div>
+                </div>
                 
-                {/* Campo Notas (sem ícone) */}
+                {/* Campo Notas */}
                 <div>
                     <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notas</label>
                     <Controller
