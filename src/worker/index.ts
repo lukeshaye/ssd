@@ -18,7 +18,6 @@ import {
   CreateFinancialEntrySchema,
   CreateProductSchema,
   CreateProfessionalSchema,
-  ServiceSchema as CreateServiceSchema,
 } from '../shared/types';
 
 // --- Schemas de Validação Locais ---
@@ -270,38 +269,6 @@ app.delete("/api/professionals/:id", authMiddleware, async (c) => {
     const professionalId = c.req.param('id');
     await c.env.DB.prepare(`DELETE FROM professionals WHERE id = ? AND user_id = ?`).bind(professionalId, user.id).run();
     return c.json({ success: true });
-});
-
-// --- Novas Rotas para Profissionais (do plano) ---
-
-// Retorna as estatísticas de um profissional
-app.get("/api/professionals/:id/stats", authMiddleware, async (c) => {
-  const user = c.get("user");
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
-  const professionalId = c.req.param('id');
-
-  const totalServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ?`).bind(professionalId, user.id).first();
-  const monthlyServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ? AND strftime('%Y-%m', appointment_date) = strftime('%Y-%m', 'now')`).bind(professionalId, user.id).first();
-  const weeklyServices = await c.env.DB.prepare(`SELECT COUNT(*) as count FROM appointments WHERE professional_id = ? AND user_id = ? AND strftime('%W', appointment_date) = strftime('%W', 'now')`).bind(professionalId, user.id).first();
-  const topService = await c.env.DB.prepare(`SELECT service, COUNT(service) as count FROM appointments WHERE professional_id = ? AND user_id = ? GROUP BY service ORDER BY count DESC LIMIT 1`).bind(professionalId, user.id).first();
-  const topClient = await c.env.DB.prepare(`SELECT client_name, COUNT(client_name) as count FROM appointments WHERE professional_id = ? AND user_id = ? GROUP BY client_name ORDER BY count DESC LIMIT 1`).bind(professionalId, user.id).first();
-
-  return c.json({
-    totalServices: totalServices?.count || 0,
-    monthlyServices: monthlyServices?.count || 0,
-    weeklyServices: weeklyServices?.count || 0,
-    topService: topService || { service: 'N/A', count: 0 },
-    topClient: topClient || { client_name: 'N/A', count: 0 },
-  });
-});
-
-// Retorna o histórico de faltas de um profissional
-app.get("/api/professionals/:id/absences", authMiddleware, async (c) => {
-  const user = c.get("user");
-  if (!user) return c.json({ error: "Unauthorized" }, 401);
-  const professionalId = c.req.param('id');
-  const absences = await c.env.DB.prepare(`SELECT * FROM professional_absences WHERE professional_id = ? AND user_id = ? ORDER BY date DESC`).bind(professionalId, user.id).all();
-  return c.json(absences.results);
 });
 
 // Adiciona uma nova falta para um profissional

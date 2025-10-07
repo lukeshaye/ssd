@@ -6,7 +6,7 @@ import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
 import { useAppStore } from '../../shared/store';
 import Layout from '../components/Layout';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../supabaseClient'; // Importe o cliente Supabase!
 import { BarChart, Calendar, XCircle, DollarSign, ArrowLeft } from 'lucide-react';
 import type { ProfessionalType } from '../../shared/types';
 import { useToastHelpers } from '../contexts/ToastContext';
@@ -61,7 +61,7 @@ export default function ProfessionalDetail() {
         
         setProfessional(foundProfessional);
 
-        // **CORREÇÃO: Chamar a função RPC e a tabela do Supabase diretamente**
+        // **CORREÇÃO: Chamar o Supabase diretamente do frontend**
         const [statsResponse, absencesResponse] = await Promise.all([
           supabase.rpc('get_professional_stats', { professional_id_param: professionalId }),
           supabase.from('professional_absences').select('*').eq('professional_id', professionalId)
@@ -84,6 +84,7 @@ export default function ProfessionalDetail() {
 
     loadProfessionalData();
   }, [id, user, professionals, navigate, showError, fetchProfessionals]);
+
 
   if (loading) {
     return <Layout><LoadingSpinner /></Layout>;
