@@ -1,6 +1,6 @@
 // src/react-app/components/ClientFormModal.tsx
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useSupabaseAuth } from '../auth/SupabaseAuthProvider';
@@ -14,7 +14,7 @@ import { CreateClientSchema } from '../../shared/types';
 import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { InputMask } from 'primereact/inputmask';
-import { Calendar, CalendarChangeParams } from 'primereact/calendar'; // Importação do tipo de evento
+import { Calendar, CalendarChangeParams } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
 
 // --- Definição de Tipos ---
@@ -53,6 +53,8 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
   const { user } = useSupabaseAuth();
   const { addClient, updateClient } = useAppStore();
   const { showSuccess, showError } = useToastHelpers();
+  
+  const calendarInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     control,
@@ -61,16 +63,8 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
     formState: { errors, isSubmitting },
   } = useForm<ClientFormData>({
     resolver: zodResolver(CreateClientSchema),
-    defaultValues: editingClient
-      ? {
-          name: editingClient.name,
-          phone: editingClient.phone || '',
-          email: editingClient.email || '',
-          notes: editingClient.notes || '',
-          birth_date: editingClient.birth_date ? new Date(editingClient.birth_date) : null,
-          gender: editingClient.gender,
-        }
-      : defaultFormValues
+    defaultValues: defaultFormValues,
+    mode: 'onChange',
   });
 
   const onSubmit = async (formData: ClientFormData) => {
@@ -91,9 +85,8 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
   };
   
   useEffect(() => {
-    if (!isOpen) {
-      reset(defaultFormValues);
-    } else if (editingClient) {
+    if (isOpen) {
+      if (editingClient) {
         reset({
             name: editingClient.name,
             phone: editingClient.phone || '',
@@ -102,6 +95,9 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
             birth_date: editingClient.birth_date ? new Date(editingClient.birth_date) : null,
             gender: editingClient.gender,
         });
+      } else {
+        reset(defaultFormValues);
+      }
     }
   }, [isOpen, editingClient, reset]);
 
@@ -199,16 +195,14 @@ export default function ClientFormModal({ isOpen, onClose, onClientCreated, edit
                       control={control}
                       render={({ field, fieldState }) => (
                         <Calendar 
-                          id={field.name} 
-                          value={field.value} 
-                          // MODIFICAÇÃO: Lógica para forçar erro em datas inválidas digitadas
-                          onChange={(e: CalendarChangeParams) => {
-                            if (e.target.value && e.value === null) {
-                              field.onChange(new Date('invalid'));
-                            } else {
-                              field.onChange(e.value);
+                          id={field.name}
+                          ref={(el) => {
+                            if (el) {
+                                calendarInputRef.current = el.getInput();
                             }
-                          }} 
+                          }}
+                          value={field.value} 
+                          onChange={(e: CalendarChangeParams) => field.onChange(e.value)} 
                           dateFormat="dd/mm/yy"
                           placeholder="DD/MM/AAAA"
                           mask="99/99/9999"

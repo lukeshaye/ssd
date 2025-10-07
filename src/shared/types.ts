@@ -12,12 +12,11 @@ export const ClientSchema = z.object({
   phone: z.string().optional().nullable(),
   email: z.string().email({ message: "Email inválido" }).or(z.literal("")).optional().nullable(),
   notes: z.string().optional().nullable(),
-  // MODIFICAÇÃO: Adicionada validação de data mínima e máxima.
+  // LINHA CORRIGIDA ABAIXO: Removido o .nullable() para impedir que datas inválidas (convertidas para null) passem na validação.
   birth_date: z.date({ invalid_type_error: "Data inválida." })
     .min(new Date("1900-01-01"), { message: "Data de nascimento improvável." })
     .max(new Date(), { message: "A data de nascimento não pode ser no futuro." })
-    .optional()
-    .nullable(),
+    .optional(), // Apenas .optional() é suficiente para permitir que o campo fique em branco.
   gender: z.enum(["masculino", "feminino", "outro"]).optional().nullable(),
 });
 export const CreateClientSchema = ClientSchema.omit({ id: true, user_id: true });
