@@ -18,6 +18,10 @@ ADD COLUMN IF NOT EXISTS commission_rate NUMERIC(5, 2); -- Ex: 0.10 para 10%
 
 -- Adiciona a política de segurança para a nova tabela
 ALTER TABLE public.professional_absences ENABLE ROW LEVEL SECURITY;
+
+-- ADICIONADO: Remove a política se ela já existir para evitar o erro
+DROP POLICY IF EXISTS "Usuários podem gerenciar as faltas de seus profissionais." ON public.professional_absences;
+
 CREATE POLICY "Usuários podem gerenciar as faltas de seus profissionais."
 ON public.professional_absences
 FOR ALL

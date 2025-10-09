@@ -1,3 +1,5 @@
+// src/worker/index.ts
+
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { getCookie, setCookie } from "hono/cookie";
@@ -232,7 +234,7 @@ app.delete("/api/products/:id", authMiddleware, async (c) => {
 });
 
 
-// --- Rotas de Profissionais ---
+// --- Rotas de Profissionais (ATUALIZADO) ---
 app.get("/api/professionals", authMiddleware, async (c) => {
     const user = c.get("user");
     if (!user) return c.json({ error: "Unauthorized" }, 401);
@@ -247,7 +249,13 @@ app.post("/api/professionals", authMiddleware, zValidator('json', CreateProfessi
     const result = await c.env.DB.prepare(`
       INSERT INTO professionals (user_id, name, color, salary, commission_rate)
       VALUES (?, ?, ?, ?, ?)
-    `).bind(user.id, validatedData.name, validatedData.color, validatedData.salary, validatedData.commission_rate).run();
+    `).bind(
+        user.id,
+        validatedData.name,
+        validatedData.color || null,
+        validatedData.salary || null,
+        validatedData.commission_rate || null
+    ).run();
     return c.json({ id: result.meta.last_row_id }, 201);
 });
 
@@ -259,7 +267,14 @@ app.put("/api/professionals/:id", authMiddleware, zValidator('json', CreateProfe
     await c.env.DB.prepare(`
       UPDATE professionals SET name = ?, color = ?, salary = ?, commission_rate = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_id = ?
-    `).bind(validatedData.name, validatedData.color, validatedData.salary, validatedData.commission_rate, professionalId, user.id).run();
+    `).bind(
+        validatedData.name,
+        validatedData.color || null,
+        validatedData.salary || null,
+        validatedData.commission_rate || null,
+        professionalId,
+        user.id
+    ).run();
     return c.json({ success: true });
 });
 

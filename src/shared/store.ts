@@ -158,7 +158,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => ({ services: state.services.filter((s) => s.id !== serviceId) }));
   },
 
-  // --- PROFISSIONAIS ---
+  // --- PROFISSIONAIS (ATUALIZADO) ---
   professionals: [],
   fetchProfessionals: async (userId) => {
     set(state => ({ loading: { ...state.loading, professionals: true } }));
@@ -174,6 +174,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateProfessional: async (professional) => {
     const { data, error } = await supabase.from('professionals').update(professional).eq('id', professional.id).select();
     if (error) throw error;
+    // Garante que o estado seja atualizado com os novos dados
     if (data) set((state) => ({ professionals: state.professionals.map((p) => (p.id === professional.id ? data[0] : p)) }));
   },
   deleteProfessional: async (professionalId) => {

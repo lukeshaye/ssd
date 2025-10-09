@@ -22,15 +22,18 @@ export const CreateClientSchema = ClientSchema.omit({ id: true, user_id: true })
 
 
 // =================================================================
-// --- Schemas de Profissionais ---
+// --- Schemas de Profissionais (ATUALIZADO) ---
 // =================================================================
 export const ProfessionalSchema = z.object({
   id: z.number().optional(),
   user_id: z.string(),
   name: z.string().min(1, "Nome do profissional é obrigatório"),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Formato de cor inválido. Use hexadecimal, ex: #RRGGBB").optional().nullable(),
-  salary: z.number().positive("O salário deve ser um número positivo").optional().nullable(),
-  commission_rate: z.number().min(0, "A comissão não pode ser negativa").max(1, "A comissão deve ser entre 0 e 1 (ex: 0.1 para 10%)").optional().nullable(),
+  // Validação para a cor no formato hexadecimal (ex: #RRGGBB)
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Formato de cor inválido.").optional().nullable(),
+  // Salário é opcional, mas se existir, deve ser um número positivo
+  salary: z.number().positive("O salário deve ser um número positivo.").optional().nullable(),
+  // Comissão é opcional, mas se existir, deve ser um número entre 0 e 100
+  commission_rate: z.number().min(0, "A comissão não pode ser negativa.").max(100, "A comissão não pode ser maior que 100%.").optional().nullable(),
 });
 export const CreateProfessionalSchema = ProfessionalSchema.omit({ id: true, user_id: true });
 
